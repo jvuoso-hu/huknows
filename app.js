@@ -64,7 +64,7 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
   try {
     await ack();
 
-    const { userId: expertUserId, query, example, channelCount } = JSON.parse(action.value);
+    const { userId: expertUserId, query, example, channelCount, explanation } = JSON.parse(action.value);
     const requesterUserId = body.user.id;
 
     const [expertName, opened] = await Promise.all([
@@ -73,7 +73,7 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
     ]);
 
     const channelId = opened.channel.id;
-    const brief = buildBrief(query, expertName, example, channelCount);
+    const brief = buildBrief(query, expertName, explanation, example, channelCount);
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 

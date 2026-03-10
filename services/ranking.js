@@ -1,3 +1,5 @@
+const { identifyExpertsWithAI } = require("./aiRanking");
+
 const STOPWORDS = new Set([
   "el", "la", "los", "las", "de", "del", "y", "o", "que", "en", "con",
   "para", "por", "un", "una", "unos", "unas", "lo", "al", "se", "me",
@@ -6,8 +8,7 @@ const STOPWORDS = new Set([
   "in", "on", "for", "is", "it", "its", "was", "are", "be", "has",
 ]);
 
-const RECENCY_DAYS = 14;
-const RECENCY_MULTIPLIER = 1.5;
+const MAX_CANDIDATES = 200;
 
 function normalize(text) {
   return (text || "").toLowerCase().trim();
@@ -20,13 +21,9 @@ function extractKeywords(text) {
     .filter((word) => word.length > 2 && !STOPWORDS.has(word));
 }
 
-function scoreMessage(messageText, keywords) {
+function isCandidate(messageText, keywords) {
   const text = normalize(messageText);
-  let score = 0;
-  for (const keyword of keywords) {
-    if (text.includes(keyword)) score += 1;
-  }
-  return score;
+  return keywords.some((kw) => text.includes(kw));
 }
 
 async function getAllPublicChannels(client, logger) {
@@ -53,13 +50,9 @@ async function rankExperts(client, query, requesterUserId, logger) {
   if (!keywords.length) return [];
 
   const channels = await getAllPublicChannels(client, logger);
-  const cutoff = Date.now() - RECENCY_DAYS * 24 * 60 * 60 * 1000;
-
-  const userScores = {};
-  const userBestExample = {};
+  const candidates = [];
   const userChannels = {};
 
-  // Fetch all channel histories in parallel
   const results = await Promise.allSettled(
     channels.map((channel) =>
       client.conversations.history({ channel: channel.id, limit: 100 })
@@ -74,38 +67,36 @@ async function rankExperts(client, query, requesterUserId, logger) {
     for (const message of messages) {
       if (!message.user || message.subtype) continue;
       if (message.user === requesterUserId) continue;
+      if (!isCandidate(message.text, keywords)) continue;
 
-      const baseScore = scoreMessage(message.text, keywords);
-      if (baseScore <= 0) continue;
-
-      const ts = parseFloat(message.ts) * 1000;
-      const score = ts > cutoff ? baseScore * RECENCY_MULTIPLIER : baseScore;
-
-      userScores[message.user] = (userScores[message.user] || 0) + score;
+      candidates.push({
+        userId: message.user,
+        text: message.text,
+        channelName: channel.name,
+      });
 
       if (!userChannels[message.user]) userChannels[message.user] = new Set();
       userChannels[message.user].add(channel.name);
-
-      // Keep the best example (highest base score per user)
-      if (!userBestExample[message.user] || baseScore > userBestExample[message.user].score) {
-        userBestExample[message.user] = {
-          text: message.text,
-          channelName: channel.name,
-          score: baseScore,
-        };
-      }
     }
   }
 
-  return Object.entries(userScores)
-    .map(([userId, score]) => ({
-      userId,
-      score: Math.round(score),
-      example: userBestExample[userId],
-      channelCount: userChannels[userId]?.size || 0,
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3);
+  logger.info(`Found ${candidates.length} candidate messages for query: ${query}`);
+
+  const aiResults = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query);
+
+  return aiResults.map((expert) => ({
+    userId: expert.userId,
+    score: expert.score,
+    confidence: expert.confidence,
+    explanation: expert.explanation,
+    example: expert.exampleText
+      ? {
+          text: expert.exampleText,
+          channelName: candidates.find((c) => c.userId === expert.userId)?.channelName || "",
+        }
+      : null,
+    channelCount: userChannels[expert.userId]?.size || 0,
+  }));
 }
 
-module.exports = { rankExperts, extractKeywords };
+module.exports = { rankExperts };

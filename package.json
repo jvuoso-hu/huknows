@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/jvuoso-hu/huknows#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@slack/bolt": "^4.6.0",
     "dotenv": "^17.3.1"
   },

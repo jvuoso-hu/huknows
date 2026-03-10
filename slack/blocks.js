@@ -1,9 +1,3 @@
-function getConfidenceLabel(score) {
-  if (score >= 5) return "Strong match";
-  if (score >= 3) return "Good match";
-  return "Possible match";
-}
-
 function buildResultBlocks(query, experts) {
   const blocks = [
     {
@@ -14,8 +8,7 @@ function buildResultBlocks(query, experts) {
   ];
 
   for (let i = 0; i < experts.length; i++) {
-    const { userId, name, score, dnd, example, channelCount } = experts[i];
-    const confidence = getConfidenceLabel(score);
+    const { userId, name, confidence, explanation, dnd, example, channelCount } = experts[i];
 
     const channelInfo =
       channelCount > 1
@@ -27,7 +20,9 @@ function buildResultBlocks(query, experts) {
     let text = `*${i + 1}. ${name}*  ${dnd.emoji} ${dnd.label}`;
     text += `\n${confidence}${channelInfo ? ` · ${channelInfo}` : ""}`;
 
-    if (example) {
+    if (explanation) {
+      text += `\n_${explanation}_`;
+    } else if (example) {
       const snippet = example.text.slice(0, 120).replace(/\n/g, " ");
       text += `\n_"${snippet}${example.text.length > 120 ? "..." : ""}"_`;
     }
@@ -40,7 +35,7 @@ function buildResultBlocks(query, experts) {
         text: { type: "plain_text", text: `Connect` },
         style: "primary",
         action_id: "connect_expert",
-        value: JSON.stringify({ userId, query, example: example || null, channelCount }),
+        value: JSON.stringify({ userId, query, example: example || null, channelCount, explanation: explanation || null }),
       },
     });
   }
@@ -48,7 +43,7 @@ function buildResultBlocks(query, experts) {
   return blocks;
 }
 
-function buildBrief(query, expertName, example, channelCount) {
+function buildBrief(query, expertName, explanation, example, channelCount) {
   const lines = [
     `👋 Hi ${expertName}!`,
     ``,
@@ -57,7 +52,9 @@ function buildBrief(query, expertName, example, channelCount) {
     `📌 *Topic:* ${query}`,
   ];
 
-  if (example) {
+  if (explanation) {
+    lines.push(`💬 *Why you:* ${explanation}`);
+  } else if (example) {
     const reason =
       channelCount > 1
         ? `you've discussed this across ${channelCount} channels, including *#${example.channelName}*`
