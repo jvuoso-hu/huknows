@@ -91,19 +91,25 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
   }
 });
 
-app.action("feedback_helpful", async ({ ack, body, client, action }) => {
+app.action("feedback_helpful", async ({ ack, body, respond, action }) => {
   await ack();
 
   const { query, lang = "es" } = JSON.parse(action.value);
   recordSuccess(query);
 
-  if (body.container?.channel_id) {
-    await client.chat.postEphemeral({
-      channel: body.container.channel_id,
-      user: body.user.id,
-      text: t(lang, "feedbackThanks"),
-    });
-  }
+  // Replace the feedback button with a thank you note
+  const originalBlocks = body.message?.blocks || [];
+  const blocksWithoutButton = originalBlocks.filter((b) => b.type !== "actions");
+
+  blocksWithoutButton.push({
+    type: "context",
+    elements: [{ type: "mrkdwn", text: t(lang, "feedbackThanks") }],
+  });
+
+  await respond({
+    replace_original: true,
+    blocks: blocksWithoutButton,
+  });
 });
 
 (async () => {
