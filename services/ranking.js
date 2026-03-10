@@ -45,7 +45,7 @@ async function getAllPublicChannels(client, logger) {
   return channels;
 }
 
-async function rankExperts(client, query, requesterUserId, logger, lang = "es") {
+async function rankExperts(client, query, requesterUserId, logger) {
   const keywords = extractKeywords(query);
   if (!keywords.length) return [];
 
@@ -82,9 +82,11 @@ async function rankExperts(client, query, requesterUserId, logger, lang = "es") 
 
   logger.info(`Found ${candidates.length} candidate messages for query: ${query}`);
 
-  const aiResults = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query, lang);
+  const { lang, experts: aiResults } = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query);
 
-  return aiResults.map((expert) => ({
+  return {
+    lang: lang || "es",
+    experts: aiResults.map((expert) => ({
     userId: expert.userId,
     score: expert.score,
     confidence: expert.confidence,
@@ -95,8 +97,9 @@ async function rankExperts(client, query, requesterUserId, logger, lang = "es") 
           channelName: candidates.find((c) => c.userId === expert.userId)?.channelName || "",
         }
       : null,
-    channelCount: userChannels[expert.userId]?.size || 0,
-  }));
+      channelCount: userChannels[expert.userId]?.size || 0,
+    })),
+  };
 }
 
 module.exports = { rankExperts };

@@ -7,6 +7,8 @@ const SPANISH_WORDS = new Set([
 const ENGLISH_WORDS = new Set([
   "what", "who", "how", "where", "when", "about", "with", "from",
   "need", "want", "find", "help", "know", "someone", "topic", "looking",
+  "for", "the", "and", "our", "their", "clients", "users", "team",
+  "by", "at", "into", "has", "have", "can", "does", "make", "get",
 ]);
 
 function detectLanguage(text) {
@@ -32,6 +34,9 @@ const STRINGS = {
     dndUntil: (t) => `No molestar hasta ${t}`,
     dnd: "No molestar",
     topExperts: (q) => `Top expertos para: ${q}`,
+    helpful: "✅ Sí, me ayudó",
+    feedbackThanks: "🧠 ¡Gracias! HuKnows registró esta búsqueda como exitosa.",
+    frequentBadge: (n) => `🔥 Búsqueda frecuente · ${n} ${n === 1 ? "persona encontró" : "personas encontraron"} esto útil`,
   },
   en: {
     searching: (q) => `🔍 Searching for experts on _${q}_...`,
@@ -45,6 +50,9 @@ const STRINGS = {
     dndUntil: (t) => `DND until ${t}`,
     dnd: "Do Not Disturb",
     topExperts: (q) => `Top experts for: ${q}`,
+    helpful: "✅ Yes, this helped",
+    feedbackThanks: "🧠 Thanks! HuKnows registered this search as successful.",
+    frequentBadge: (n) => `🔥 Popular search · ${n} ${n === 1 ? "person found" : "people found"} this helpful`,
   },
 };
 

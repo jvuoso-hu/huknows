@@ -4,7 +4,8 @@ const { App } = require("@slack/bolt");
 const { rankExperts } = require("./services/ranking");
 const { enrichExperts } = require("./slack/userInfo");
 const { buildResultBlocks, buildBrief } = require("./slack/blocks");
-const { detectLanguage, t } = require("./utils/language");
+const { t } = require("./utils/language");
+const { recordSuccess } = require("./utils/feedback");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -16,22 +17,22 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     await ack();
 
     const query = (command.text || "").trim();
-    const lang = detectLanguage(query);
 
     if (!query) {
       await respond({
         response_type: "ephemeral",
-        text: t(lang, "noQuery"),
+        text: t("es", "noQuery"),
       });
       return;
     }
 
+    // Send immediate feedback before the AI call
     await respond({
       response_type: "ephemeral",
-      text: t(lang, "searching", query),
+      text: `🔍 _${query}_...`,
     });
 
-    const ranked = await rankExperts(client, query, command.user_id, logger, lang);
+    const { lang, experts: ranked } = await rankExperts(client, query, command.user_id, logger);
 
     if (!ranked.length) {
       await respond({
@@ -87,6 +88,21 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
     }
   } catch (error) {
     logger.error("Error in connect_expert:", error);
+  }
+});
+
+app.action("feedback_helpful", async ({ ack, body, client, action }) => {
+  await ack();
+
+  const { query, lang = "es" } = JSON.parse(action.value);
+  recordSuccess(query);
+
+  if (body.container?.channel_id) {
+    await client.chat.postEphemeral({
+      channel: body.container.channel_id,
+      user: body.user.id,
+      text: t(lang, "feedbackThanks"),
+    });
   }
 });
 

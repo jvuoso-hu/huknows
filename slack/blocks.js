@@ -1,13 +1,24 @@
 const { t } = require("../utils/language");
+const { getSuccessCount } = require("../utils/feedback");
 
 function buildResultBlocks(query, experts, lang = "es") {
+  const successCount = getSuccessCount(query);
+
   const blocks = [
     {
       type: "header",
       text: { type: "plain_text", text: `🔎 ${t(lang, "topExperts", query)}` },
     },
-    { type: "divider" },
   ];
+
+  if (successCount > 0) {
+    blocks.push({
+      type: "context",
+      elements: [{ type: "mrkdwn", text: t(lang, "frequentBadge", successCount) }],
+    });
+  }
+
+  blocks.push({ type: "divider" });
 
   for (let i = 0; i < experts.length; i++) {
     const { userId, name, confidence, explanation, dnd, example, channelCount } = experts[i];
@@ -41,6 +52,21 @@ function buildResultBlocks(query, experts, lang = "es") {
       },
     });
   }
+
+  blocks.push(
+    { type: "divider" },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: t(lang, "helpful") },
+          action_id: "feedback_helpful",
+          value: JSON.stringify({ query, lang }),
+        },
+      ],
+    }
+  );
 
   return blocks;
 }
