@@ -2,14 +2,18 @@ const Anthropic = require("@anthropic-ai/sdk");
 
 const anthropic = new Anthropic();
 
-async function identifyExpertsWithAI(candidates, query) {
+async function identifyExpertsWithAI(candidates, query, lang = "es") {
   if (!candidates.length) return [];
 
   const messageList = candidates
     .map((m) => `[${m.userId} | #${m.channelName}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
     .join("\n");
 
-  const prompt = `You are analyzing internal Slack messages to identify the top experts on a topic.
+  const langInstruction = lang === "en"
+    ? "Respond in English."
+    : "Responde en español.";
+
+  const prompt = `You are analyzing internal Slack messages to identify the top experts on a topic. ${langInstruction}
 
 Topic: "${query}"
 

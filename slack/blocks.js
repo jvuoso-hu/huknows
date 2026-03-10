@@ -1,8 +1,10 @@
-function buildResultBlocks(query, experts) {
+const { t } = require("../utils/language");
+
+function buildResultBlocks(query, experts, lang = "es") {
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: `🔎 Top experts for: ${query}` },
+      text: { type: "plain_text", text: `🔎 ${t(lang, "topExperts", query)}` },
     },
     { type: "divider" },
   ];
@@ -32,10 +34,10 @@ function buildResultBlocks(query, experts) {
       text: { type: "mrkdwn", text },
       accessory: {
         type: "button",
-        text: { type: "plain_text", text: `Connect` },
+        text: { type: "plain_text", text: t(lang, "connect") },
         style: "primary",
         action_id: "connect_expert",
-        value: JSON.stringify({ userId, query, example: example || null, channelCount, explanation: explanation || null }),
+        value: JSON.stringify({ userId, query, example: example || null, channelCount, explanation: explanation || null, lang }),
       },
     });
   }

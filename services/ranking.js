@@ -45,7 +45,7 @@ async function getAllPublicChannels(client, logger) {
   return channels;
 }
 
-async function rankExperts(client, query, requesterUserId, logger) {
+async function rankExperts(client, query, requesterUserId, logger, lang = "es") {
   const keywords = extractKeywords(query);
   if (!keywords.length) return [];
 
@@ -82,7 +82,7 @@ async function rankExperts(client, query, requesterUserId, logger) {
 
   logger.info(`Found ${candidates.length} candidate messages for query: ${query}`);
 
-  const aiResults = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query);
+  const aiResults = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query, lang);
 
   return aiResults.map((expert) => ({
     userId: expert.userId,

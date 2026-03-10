@@ -4,6 +4,7 @@ const { App } = require("@slack/bolt");
 const { rankExperts } = require("./services/ranking");
 const { enrichExperts } = require("./slack/userInfo");
 const { buildResultBlocks, buildBrief } = require("./slack/blocks");
+const { detectLanguage, t } = require("./utils/language");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -15,39 +16,39 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     await ack();
 
     const query = (command.text || "").trim();
+    const lang = detectLanguage(query);
 
     if (!query) {
       await respond({
         response_type: "ephemeral",
-        text: "Usage: `/huknows <topic or problem>`",
+        text: t(lang, "noQuery"),
       });
       return;
     }
 
-    // Acknowledge immediately so the user knows something is happening
     await respond({
       response_type: "ephemeral",
-      text: `🔍 Searching for experts on _${query}_...`,
+      text: t(lang, "searching", query),
     });
 
-    const ranked = await rankExperts(client, query, command.user_id, logger);
+    const ranked = await rankExperts(client, query, command.user_id, logger, lang);
 
     if (!ranked.length) {
       await respond({
         response_type: "ephemeral",
         replace_original: true,
-        text: `No clear experts found for *${query}* in the public channels I can read.`,
+        text: t(lang, "noExperts", query),
       });
       return;
     }
 
-    const experts = await enrichExperts(client, ranked);
-    const blocks = buildResultBlocks(query, experts);
+    const experts = await enrichExperts(client, ranked, lang);
+    const blocks = buildResultBlocks(query, experts, lang);
 
     await respond({
       response_type: "ephemeral",
       replace_original: true,
-      text: `Top experts for: ${query}`,
+      text: t(lang, "topExperts", query),
       blocks,
     });
   } catch (error) {
@@ -55,7 +56,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     await respond({
       response_type: "ephemeral",
       replace_original: true,
-      text: "Something went wrong while searching for experts.",
+      text: t("es", "error"),
     });
   }
 });
@@ -64,7 +65,7 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
   try {
     await ack();
 
-    const { userId: expertUserId, query, example, channelCount, explanation } = JSON.parse(action.value);
+    const { userId: expertUserId, query, example, channelCount, explanation, lang = "es" } = JSON.parse(action.value);
     const requesterUserId = body.user.id;
 
     const [expertName, opened] = await Promise.all([
@@ -81,7 +82,7 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
       await client.chat.postEphemeral({
         channel: body.container.channel_id,
         user: requesterUserId,
-        text: `🤝 Connected with *${expertName}*. Chat opened and brief sent.`,
+        text: t(lang, "connected", expertName),
       });
     }
   } catch (error) {
