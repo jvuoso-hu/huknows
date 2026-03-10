@@ -1,0 +1,30 @@
+{
+  "name": "huknows",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jvuoso-hu/huknows.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jvuoso-hu/huknows/issues"
+  },
+  "homepage": "https://github.com/jvuoso-hu/huknows#readme",
+  "dependencies": {
+    "@slack/bolt": "^4.6.0",
+    "dotenv": "^17.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

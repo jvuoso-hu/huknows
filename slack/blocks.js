@@ -1,0 +1,76 @@
+function getConfidenceLabel(score) {
+  if (score >= 5) return "Strong match";
+  if (score >= 3) return "Good match";
+  return "Possible match";
+}
+
+function buildResultBlocks(query, experts) {
+  const blocks = [
+    {
+      type: "header",
+      text: { type: "plain_text", text: `🔎 Top experts for: ${query}` },
+    },
+    { type: "divider" },
+  ];
+
+  for (let i = 0; i < experts.length; i++) {
+    const { userId, name, score, dnd, example, channelCount } = experts[i];
+    const confidence = getConfidenceLabel(score);
+
+    const channelInfo =
+      channelCount > 1
+        ? `active in ${channelCount} channels`
+        : example?.channelName
+        ? `active in #${example.channelName}`
+        : "";
+
+    let text = `*${i + 1}. ${name}*  ${dnd.emoji} ${dnd.label}`;
+    text += `\n${confidence}${channelInfo ? ` · ${channelInfo}` : ""}`;
+
+    if (example) {
+      const snippet = example.text.slice(0, 120).replace(/\n/g, " ");
+      text += `\n_"${snippet}${example.text.length > 120 ? "..." : ""}"_`;
+    }
+
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text },
+      accessory: {
+        type: "button",
+        text: { type: "plain_text", text: `Connect` },
+        style: "primary",
+        action_id: "connect_expert",
+        value: JSON.stringify({ userId, query, example: example || null, channelCount }),
+      },
+    });
+  }
+
+  return blocks;
+}
+
+function buildBrief(query, expertName, example, channelCount) {
+  const lines = [
+    `👋 Hi ${expertName}!`,
+    ``,
+    `🧠 *HuKnows identified you as one of the most relevant people to help with this topic.*`,
+    ``,
+    `📌 *Topic:* ${query}`,
+  ];
+
+  if (example) {
+    const reason =
+      channelCount > 1
+        ? `you've discussed this across ${channelCount} channels, including *#${example.channelName}*`
+        : `you recently discussed this in *#${example.channelName}*`;
+    lines.push(`💬 *Why you:* ${reason}`);
+  }
+
+  lines.push(
+    ``,
+    `⚡ This connection was generated automatically to speed up internal problem solving.`
+  );
+
+  return lines.join("\n");
+}
+
+module.exports = { buildResultBlocks, buildBrief };

@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+
+# build
+dist/
+build/
+coverage/
+
+# editor
+.cursor/
+.vscode/
+.idea/
+
+# misc
+*.zip
+*.tar
+*.gz
