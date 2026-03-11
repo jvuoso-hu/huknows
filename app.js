@@ -3,7 +3,7 @@ require("dotenv").config();
 const { App } = require("@slack/bolt");
 const { rankExperts } = require("./services/ranking");
 const { enrichExperts } = require("./slack/userInfo");
-const { buildResultBlocks, buildBrief } = require("./slack/blocks");
+const { buildResultBlocks, buildNoExpertsBlocks, buildBrief } = require("./slack/blocks");
 const { t } = require("./utils/language");
 const { recordSuccess } = require("./utils/feedback");
 
@@ -32,13 +32,14 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
       text: `🔍 _${query}_...`,
     });
 
-    const { lang, experts: ranked } = await rankExperts(client, query, command.user_id, logger);
+    const { lang, experts: ranked, suggestedChannels } = await rankExperts(client, query, command.user_id, logger);
 
     if (!ranked.length) {
       await respond({
         response_type: "ephemeral",
         replace_original: true,
         text: t(lang, "noExperts", query),
+        blocks: buildNoExpertsBlocks(query, suggestedChannels, lang),
       });
       return;
     }
@@ -66,7 +67,7 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
   try {
     await ack();
 
-    const { userId: expertUserId, query, example, channelCount, explanation, lang = "es" } = JSON.parse(action.value);
+    const { userId: expertUserId, query, example, channelCount, explanation, briefMessage, lang = "es" } = JSON.parse(action.value);
     const requesterUserId = body.user.id;
 
     const [expertName, opened] = await Promise.all([
@@ -75,7 +76,7 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
     ]);
 
     const channelId = opened.channel.id;
-    const brief = buildBrief(query, expertName, explanation, example, channelCount);
+    const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessage);
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 

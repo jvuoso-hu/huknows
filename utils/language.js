@@ -38,6 +38,7 @@ const STRINGS = {
     feedbackThanks: (name) => `🧠 ¡Gracias! HuKnows anotó a *${name}* como experto útil en este tema.`,
     feedbackPrompt: (name) => `¿Te ayudó *${name}*?`,
     frequentBadge: (n) => `🔥 Búsqueda frecuente · ${n} ${n === 1 ? "persona encontró" : "personas encontraron"} esto útil`,
+    tryChannels: "Pero el tema se discutió en estos canales, podés preguntar ahí:",
   },
   en: {
     searching: (q) => `🔍 Searching for experts on _${q}_...`,
@@ -55,11 +56,19 @@ const STRINGS = {
     feedbackThanks: (name) => `🧠 Thanks! HuKnows noted *${name}* as a helpful expert on this topic.`,
     feedbackPrompt: (name) => `Did *${name}* help you?`,
     frequentBadge: (n) => `🔥 Popular search · ${n} ${n === 1 ? "person found" : "people found"} this helpful`,
+    tryChannels: "But this topic has been discussed in these channels, you can ask there:",
   },
 };
 
+// Fallback: pt → es, anything unknown → en
+function resolveLang(lang) {
+  if (STRINGS[lang]) return lang;
+  if (lang === "pt") return "es";
+  return "en";
+}
+
 function t(lang, key, ...args) {
-  const str = STRINGS[lang]?.[key] ?? STRINGS["es"][key];
+  const str = STRINGS[resolveLang(lang)]?.[key] ?? STRINGS["es"][key];
   return typeof str === "function" ? str(...args) : str;
 }
 

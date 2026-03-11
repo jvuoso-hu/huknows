@@ -21,13 +21,13 @@ function buildResultBlocks(query, experts, lang = "es") {
   blocks.push({ type: "divider" });
 
   for (let i = 0; i < experts.length; i++) {
-    const { userId, name, confidence, explanation, dnd, example, channelCount } = experts[i];
+    const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount } = experts[i];
 
     const channelInfo =
       channelCount > 1
-        ? `active in ${channelCount} channels`
+        ? `${channelCount} channels`
         : example?.channelName
-        ? `active in #${example.channelName}`
+        ? `#${example.channelName}`
         : "";
 
     let text = `*${i + 1}. ${name}*  ${dnd.emoji} ${dnd.label}`;
@@ -48,7 +48,10 @@ function buildResultBlocks(query, experts, lang = "es") {
         text: { type: "plain_text", text: t(lang, "connect") },
         style: "primary",
         action_id: "connect_expert",
-        value: JSON.stringify({ userId, query, example: example || null, channelCount, explanation: explanation || null, lang }),
+        value: JSON.stringify({
+          userId, query, example: example || null, channelCount,
+          explanation: explanation || null, briefMessage: briefMessage || null, lang,
+        }),
       },
     });
   }
@@ -56,7 +59,31 @@ function buildResultBlocks(query, experts, lang = "es") {
   return blocks;
 }
 
-function buildBrief(query, expertName, explanation, example, channelCount) {
+function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
+  const blocks = [
+    {
+      type: "header",
+      text: { type: "plain_text", text: `🔎 ${t(lang, "topExperts", query)}` },
+    },
+    { type: "divider" },
+    {
+      type: "section",
+      text: { type: "mrkdwn", text: t(lang, "noExperts", query) },
+    },
+  ];
+
+  if (suggestedChannels.length > 0) {
+    const channelList = suggestedChannels.map((c) => `• #${c}`).join("\n");
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: `${t(lang, "tryChannels")}\n${channelList}` },
+    });
+  }
+
+  return blocks;
+}
+
+function buildBrief(query, expertName, explanation, example, channelCount, briefMessage) {
   const lines = [
     `👋 Hi ${expertName}!`,
     ``,
@@ -65,7 +92,9 @@ function buildBrief(query, expertName, explanation, example, channelCount) {
     `📌 *Topic:* ${query}`,
   ];
 
-  if (explanation) {
+  if (briefMessage) {
+    lines.push(`💬 ${briefMessage}`);
+  } else if (explanation) {
     lines.push(`💬 *Why you:* ${explanation}`);
   } else if (example) {
     const reason =
@@ -83,4 +112,4 @@ function buildBrief(query, expertName, explanation, example, channelCount) {
   return lines.join("\n");
 }
 
-module.exports = { buildResultBlocks, buildBrief };
+module.exports = { buildResultBlocks, buildNoExpertsBlocks, buildBrief };

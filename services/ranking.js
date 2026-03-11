@@ -55,15 +55,17 @@ async function rankExperts(client, query, requesterUserId, logger) {
 
   logger.info(`Sending ${Math.min(candidates.length, MAX_CANDIDATES)} messages to Claude for: ${query}`);
 
-  const { lang, experts: aiResults } = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query);
+  const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query);
 
   return {
     lang: lang || "es",
+    suggestedChannels: suggestedChannels || [],
     experts: aiResults.map((expert) => ({
       userId: expert.userId,
       score: expert.score,
       confidence: expert.confidence,
       explanation: expert.explanation,
+      briefMessage: expert.briefMessage || null,
       example: expert.exampleText
         ? {
             text: expert.exampleText,
