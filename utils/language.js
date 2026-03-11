@@ -35,7 +35,8 @@ const STRINGS = {
     dnd: "No molestar",
     topExperts: (q) => `Top expertos para: ${q}`,
     helpful: "✅ Sí, me ayudó",
-    feedbackThanks: "🧠 ¡Gracias! HuKnows registró esta búsqueda como exitosa.",
+    feedbackThanks: (name) => `🧠 ¡Gracias! HuKnows anotó a *${name}* como experto útil en este tema.`,
+    feedbackPrompt: (name) => `¿Te ayudó *${name}*?`,
     frequentBadge: (n) => `🔥 Búsqueda frecuente · ${n} ${n === 1 ? "persona encontró" : "personas encontraron"} esto útil`,
   },
   en: {
@@ -50,8 +51,9 @@ const STRINGS = {
     dndUntil: (t) => `DND until ${t}`,
     dnd: "Do Not Disturb",
     topExperts: (q) => `Top experts for: ${q}`,
-    helpful: "✅ Yes, this helped",
-    feedbackThanks: "🧠 Thanks! HuKnows registered this search as successful.",
+    helpful: "✅ Yes, they helped",
+    feedbackThanks: (name) => `🧠 Thanks! HuKnows noted *${name}* as a helpful expert on this topic.`,
+    feedbackPrompt: (name) => `Did *${name}* help you?`,
     frequentBadge: (n) => `🔥 Popular search · ${n} ${n === 1 ? "person found" : "people found"} this helpful`,
   },
 };

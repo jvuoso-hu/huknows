@@ -79,6 +79,27 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 
+    // Ephemeral feedback button in the DM — only the requester sees it
+    await client.chat.postEphemeral({
+      channel: channelId,
+      user: requesterUserId,
+      text: t(lang, "feedbackPrompt", expertName),
+      blocks: [
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "button",
+              text: { type: "plain_text", text: t(lang, "helpful") },
+              style: "primary",
+              action_id: "feedback_helpful",
+              value: JSON.stringify({ query, expertUserId, expertName, lang }),
+            },
+          ],
+        },
+      ],
+    });
+
     if (body.container?.channel_id) {
       await client.chat.postEphemeral({
         channel: body.container.channel_id,
@@ -91,24 +112,21 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
   }
 });
 
-app.action("feedback_helpful", async ({ ack, body, respond, action }) => {
+app.action("feedback_helpful", async ({ ack, respond, action }) => {
   await ack();
 
-  const { query, lang = "es" } = JSON.parse(action.value);
-  recordSuccess(query);
-
-  // Replace the feedback button with a thank you note
-  const originalBlocks = body.message?.blocks || [];
-  const blocksWithoutButton = originalBlocks.filter((b) => b.type !== "actions");
-
-  blocksWithoutButton.push({
-    type: "context",
-    elements: [{ type: "mrkdwn", text: t(lang, "feedbackThanks") }],
-  });
+  const { query, expertUserId, expertName, lang = "es" } = JSON.parse(action.value);
+  recordSuccess(query, expertUserId);
 
   await respond({
     replace_original: true,
-    blocks: blocksWithoutButton,
+    text: t(lang, "feedbackThanks", expertName),
+    blocks: [
+      {
+        type: "context",
+        elements: [{ type: "mrkdwn", text: t(lang, "feedbackThanks", expertName) }],
+      },
+    ],
   });
 });
 

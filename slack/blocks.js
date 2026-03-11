@@ -53,21 +53,6 @@ function buildResultBlocks(query, experts, lang = "es") {
     });
   }
 
-  blocks.push(
-    { type: "divider" },
-    {
-      type: "actions",
-      elements: [
-        {
-          type: "button",
-          text: { type: "plain_text", text: t(lang, "helpful") },
-          action_id: "feedback_helpful",
-          value: JSON.stringify({ query, lang }),
-        },
-      ],
-    }
-  );
-
   return blocks;
 }
 
