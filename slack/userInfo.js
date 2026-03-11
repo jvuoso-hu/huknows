@@ -1,49 +1,49 @@
-const { t } = require("../utils/language");
+const { interpretAvailabilityBatch } = require("../services/aiStatus");
 
-async function getUserLabel(client, userId) {
-  const result = await client.users.info({ user: userId });
-  const user = result.user;
-  return user?.real_name || user?.name || userId;
-}
-
-async function getDndStatus(client, userId, lang = "es") {
-  try {
-    const [dndResult, presenceResult] = await Promise.all([
-      client.dnd.info({ user: userId }),
-      client.users.getPresence({ user: userId }),
-    ]);
-
-    if (dndResult.snooze_enabled) {
-      if (dndResult.next_dnd_end_ts) {
-        const freeAt = new Date(dndResult.next_dnd_end_ts * 1000).toLocaleTimeString("en", {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-        return { emoji: "🔴", label: t(lang, "dndUntil", freeAt) };
-      }
-      return { emoji: "🔴", label: t(lang, "dnd") };
-    }
-
-    if (presenceResult.presence === "active") {
-      return { emoji: "🟢", label: t(lang, "available") };
-    }
-
-    return { emoji: "⚪", label: t(lang, "away") };
-  } catch {
-    return { emoji: "⚪", label: t(lang, "away") };
-  }
+function formatTime(unixTs) {
+  if (!unixTs || unixTs === 0) return null;
+  return new Date(unixTs * 1000).toLocaleTimeString("en", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 async function enrichExperts(client, experts, lang = "es") {
-  return Promise.all(
+  // Fetch all user data in parallel across all experts
+  const rawData = await Promise.all(
     experts.map(async (expert) => {
-      const [name, dnd] = await Promise.all([
-        getUserLabel(client, expert.userId),
-        getDndStatus(client, expert.userId, lang),
+      const [userInfo, dndResult, presenceResult] = await Promise.all([
+        client.users.info({ user: expert.userId }),
+        client.dnd.info({ user: expert.userId }).catch(() => null),
+        client.users.getPresence({ user: expert.userId }).catch(() => null),
       ]);
-      return { ...expert, name, dnd };
+
+      const user = userInfo.user;
+      const profile = user?.profile || {};
+
+      return {
+        ...expert,
+        name: user?.real_name || user?.name || expert.userId,
+        presence: presenceResult?.presence || "away",
+        dndEnabled: dndResult?.snooze_enabled || false,
+        dndEndsAt: formatTime(dndResult?.next_dnd_end_ts),
+        statusText: profile.status_text || "",
+        statusEmoji: profile.status_emoji || "",
+        statusExpires: formatTime(profile.status_expiration),
+      };
     })
   );
+
+  // Interpret all availabilities in a single Claude call
+  const availabilities = await interpretAvailabilityBatch(rawData, lang);
+
+  // Map availabilities back by userId (safer than index)
+  const availMap = Object.fromEntries(availabilities.map((a) => [a.userId, a]));
+
+  return rawData.map((user) => ({
+    ...user,
+    dnd: availMap[user.userId] || { emoji: "⚪", label: "?" },
+  }));
 }
 
-module.exports = { getUserLabel, getDndStatus, enrichExperts };
+module.exports = { enrichExperts };
