@@ -1,24 +1,33 @@
 const { t } = require("../utils/language");
 const { getSuccessCount } = require("../utils/feedback");
 
+const CONFIDENCE_EMOJI = {
+  "coincidencia fuerte": "🔥", "strong match": "🔥",
+  "buena coincidencia": "✅", "good match": "✅",
+  "posible coincidencia": "🤔", "possible match": "🤔",
+};
+
+function confidenceEmoji(confidence) {
+  return CONFIDENCE_EMOJI[(confidence || "").toLowerCase()] || "🔍";
+}
+
 function buildResultBlocks(query, experts, lang = "es") {
   const successCount = getSuccessCount(query);
 
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: `🔎 ${t(lang, "topExperts", query)}` },
+      text: { type: "plain_text", text: t(lang, "topExperts") },
     },
-  ];
-
-  if (successCount > 0) {
-    blocks.push({
+    {
       type: "context",
-      elements: [{ type: "mrkdwn", text: t(lang, "frequentBadge", successCount) }],
-    });
-  }
-
-  blocks.push({ type: "divider" });
+      elements: [
+        { type: "mrkdwn", text: t(lang, "topExpertsQuery", query) },
+        ...(successCount > 0 ? [{ type: "mrkdwn", text: t(lang, "frequentBadge", successCount) }] : []),
+      ],
+    },
+    { type: "divider" },
+  ];
 
   for (let i = 0; i < experts.length; i++) {
     const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount } = experts[i];
@@ -31,7 +40,7 @@ function buildResultBlocks(query, experts, lang = "es") {
         : "";
 
     let text = `*${i + 1}. ${name}*  ${dnd.emoji} ${dnd.label}`;
-    text += `\n${confidence}${channelInfo ? ` · ${channelInfo}` : ""}`;
+    text += `\n${confidenceEmoji(confidence)} ${confidence}${channelInfo ? ` · ${channelInfo}` : ""}`;
 
     if (explanation) {
       text += `\n_${explanation}_`;
@@ -63,13 +72,9 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: `🔎 ${t(lang, "topExperts", query)}` },
+      text: { type: "plain_text", text: t(lang, "topExperts") },
     },
     { type: "divider" },
-    {
-      type: "section",
-      text: { type: "mrkdwn", text: t(lang, "noExperts", query) },
-    },
   ];
 
   if (suggestedChannels.length > 0) {
@@ -77,6 +82,11 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
     blocks.push({
       type: "section",
       text: { type: "mrkdwn", text: `${t(lang, "tryChannels")}\n${channelList}` },
+    });
+  } else {
+    blocks.push({
+      type: "section",
+      text: { type: "mrkdwn", text: t(lang, "noExpertsNoChannels", query) },
     });
   }
 

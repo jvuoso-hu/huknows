@@ -11,21 +11,28 @@ function guessLang(text) {
   return words.some((w) => enWords.has(w)) ? "en" : "es";
 }
 
-async function identifyExpertsWithAI(candidates, query) {
+async function identifyExpertsWithAI(candidates, query, allChannelNames = []) {
   const hintLang = guessLang(query);
-  if (!candidates.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
+  if (!candidates.length && !allChannelNames.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
   const messageList = candidates
     .map((m) => `[${m.userId} | #${m.channelName}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
     .join("\n");
 
+  const channelNamesSection = allChannelNames.length
+    ? `\nAll workspace channel names (use for fallback channel suggestions if no messages matched): ${allChannelNames.join(", ")}`
+    : "";
+
+  const langInstruction = hintLang === "en" ? "English — respond in English" : `${hintLang} — respond in that language`;
+
   const prompt = `You are analyzing internal Slack messages to identify experts on a topic.
 
 Topic: "${query}"
-Query language: ${hintLang} — respond in that language for all text fields.
+Query language: ${langInstruction}
 
 Slack messages:
-${messageList}
+${messageList || "(none)"}
+${channelNamesSection}
 
 Tasks:
 1. Identify up to 3 people who demonstrate the most knowledge on this topic.
@@ -35,7 +42,9 @@ Tasks:
 2. For each expert, write a personalized "briefMessage" (2 sentences max) explaining specifically
    why they were selected, referencing what they actually said. This will be sent to them directly.
 
-3. Identify up to 3 channel names where this topic has been discussed (even if no clear expert found).
+3. Suggest up to 3 relevant channel names:
+   - Prefer channels where the topic was actually discussed in the messages above.
+   - If none found, interpret the channel names list and suggest any whose name implies relevance to the topic.
 
 Return ONLY valid JSON:
 {
@@ -44,13 +53,13 @@ Return ONLY valid JSON:
     {
       "userId": "<slack user id>",
       "score": <integer 1-10>,
-      "confidence": "<in query language: e.g. 'Coincidencia fuerte' / 'Strong match'>",
+      "confidence": "<in query language: e.g. 'Coincidencia fuerte' / 'Strong match' / 'Forte'>",
       "explanation": "<one sentence in query language: why relevant>",
       "briefMessage": "<2 sentences in query language, personalized, referencing what they said>",
       "exampleText": "<most relevant snippet from their messages, max 120 chars>"
     }
   ],
-  "suggestedChannels": ["<channel-name>", ...]
+  "suggestedChannels": ["<channel-name>"]
 }
 
 If no relevant experts found, return experts as [].`;

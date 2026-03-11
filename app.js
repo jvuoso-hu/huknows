@@ -5,7 +5,8 @@ const { rankExperts } = require("./services/ranking");
 const { enrichExperts } = require("./slack/userInfo");
 const { buildResultBlocks, buildNoExpertsBlocks, buildBrief } = require("./slack/blocks");
 const { t } = require("./utils/language");
-const { recordSuccess } = require("./utils/feedback");
+const { recordSuccess, recordSearch } = require("./utils/feedback");
+const { buildHomeView } = require("./slack/home");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -25,6 +26,8 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
       });
       return;
     }
+
+    recordSearch(command.user_id, query);
 
     // Send immediate feedback before the AI call
     await respond({
@@ -110,6 +113,15 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
     }
   } catch (error) {
     logger.error("Error in connect_expert:", error);
+  }
+});
+
+app.event("app_home_opened", async ({ event, client, logger }) => {
+  try {
+    const view = await buildHomeView(client, event.user);
+    await client.views.publish({ user_id: event.user, view });
+  } catch (error) {
+    logger.error("Error building App Home:", error);
   }
 });
 

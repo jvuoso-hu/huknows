@@ -55,7 +55,8 @@ async function rankExperts(client, query, requesterUserId, logger) {
 
   logger.info(`Sending ${Math.min(candidates.length, MAX_CANDIDATES)} messages to Claude for: ${query}`);
 
-  const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query);
+  const allChannelNames = channels.map((c) => c.name);
+  const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(candidates.slice(0, MAX_CANDIDATES), query, allChannelNames);
 
   return {
     lang: lang || "es",
