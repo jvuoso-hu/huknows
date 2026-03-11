@@ -90,6 +90,10 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
       text: t(lang, "feedbackPrompt", expertName),
       blocks: [
         {
+          type: "section",
+          text: { type: "mrkdwn", text: t(lang, "feedbackPrompt", expertName) },
+        },
+        {
           type: "actions",
           elements: [
             {
