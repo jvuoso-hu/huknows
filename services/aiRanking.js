@@ -2,8 +2,16 @@ const Anthropic = require("@anthropic-ai/sdk");
 
 const anthropic = new Anthropic();
 
+function guessLang(text) {
+  if (/[áéíóúüñ¿¡]/i.test(text)) return "es";
+  const enWords = new Set(["the", "for", "and", "with", "about", "how", "who", "what", "our", "from", "by", "has", "can", "into"]);
+  const words = text.toLowerCase().split(/\s+/);
+  return words.some((w) => enWords.has(w)) ? "en" : "es";
+}
+
 async function identifyExpertsWithAI(candidates, query) {
-  if (!candidates.length) return { lang: "es", experts: [] };
+  const hintLang = guessLang(query);
+  if (!candidates.length) return { lang: hintLang, experts: [] };
 
   const messageList = candidates
     .map((m) => `[${m.userId} | #${m.channelName}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
@@ -12,6 +20,7 @@ async function identifyExpertsWithAI(candidates, query) {
   const prompt = `You are analyzing internal Slack messages to identify the top experts on a topic.
 
 Topic: "${query}"
+Query language: ${hintLang === "en" ? "English — respond in English" : "Spanish — responde en español"}
 
 Slack messages:
 ${messageList}
@@ -49,7 +58,7 @@ If no relevant experts are found, return { "lang": "<detected>", "experts": [] }
 
   const text = response.content[0].text.trim();
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return { lang: "es", experts: [] };
+  if (!jsonMatch) return { lang: hintLang, experts: [] };
 
   return JSON.parse(jsonMatch[0]);
 }
