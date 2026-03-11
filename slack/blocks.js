@@ -17,17 +17,18 @@ function buildResultBlocks(query, experts, lang = "es") {
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: t(lang, "topExperts") },
+      text: { type: "plain_text", text: t(lang, "topExperts", query) },
     },
-    {
-      type: "context",
-      elements: [
-        { type: "mrkdwn", text: t(lang, "topExpertsQuery", query) },
-        ...(successCount > 0 ? [{ type: "mrkdwn", text: t(lang, "frequentBadge", successCount) }] : []),
-      ],
-    },
-    { type: "divider" },
   ];
+
+  if (successCount > 0) {
+    blocks.push({
+      type: "context",
+      elements: [{ type: "mrkdwn", text: t(lang, "frequentBadge", successCount) }],
+    });
+  }
+
+  blocks.push({ type: "divider" });
 
   for (let i = 0; i < experts.length; i++) {
     const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount } = experts[i];
@@ -72,7 +73,7 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: t(lang, "topExperts") },
+      text: { type: "plain_text", text: t(lang, "topExperts", query) },
     },
     { type: "divider" },
   ];

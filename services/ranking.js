@@ -1,4 +1,5 @@
 const { identifyExpertsWithAI } = require("./aiRanking");
+const cache = require("../utils/cache");
 
 const MAX_CANDIDATES = 200;
 
@@ -26,12 +27,16 @@ async function rankExperts(client, query, requesterUserId, logger) {
   const candidates = [];
   const userChannels = {};
 
-  // Fetch all channel histories in parallel
+  // Fetch all channel histories in parallel, with cache
   const results = await Promise.allSettled(
-    channels.map((channel) =>
-      client.conversations.history({ channel: channel.id, limit: 100 })
-        .then((h) => ({ channel, messages: h.messages || [] }))
-    )
+    channels.map(async (channel) => {
+      const cached = cache.get(channel.id);
+      if (cached) return { channel, messages: cached };
+      const h = await client.conversations.history({ channel: channel.id, limit: 100 });
+      const messages = h.messages || [];
+      cache.set(channel.id, messages);
+      return { channel, messages };
+    })
   );
 
   for (const result of results) {
