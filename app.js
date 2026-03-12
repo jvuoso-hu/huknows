@@ -36,10 +36,36 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     // Send immediate feedback before the AI call
     await respond({
       response_type: "ephemeral",
-      text: `🔎 _${query}_...`,
+      text: `🔎 _${query}_`,
     });
 
+    // Animate dots in parallel while work runs in the background
+    let animationStopped = false;
+    let resolveAnimation;
+    const animationDone = new Promise((r) => { resolveAnimation = r; });
+    (async () => {
+      const frames = [".", "..", "..."];
+      let i = 0;
+      while (!animationStopped) {
+        await new Promise((r) => setTimeout(r, 500));
+        if (animationStopped) break;
+        try {
+          await respond({
+            response_type: "ephemeral",
+            replace_original: true,
+            text: `🔎 _${query}_${frames[i % frames.length]}`,
+          });
+        } catch {}
+        i++;
+      }
+      resolveAnimation();
+    })();
+
     const onProgress = async (text) => {
+      if (!animationStopped) {
+        animationStopped = true;
+        await animationDone;
+      }
       try {
         await respond({ response_type: "ephemeral", replace_original: true, text });
       } catch {}

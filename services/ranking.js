@@ -100,8 +100,6 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
     threadFetches.push({ channel, messages });
   }
 
-  await onProgress?.(`🧵 _Leyendo threads..._`);
-
   // Fetch threads in parallel across all channels
   const allThreadReplies = await Promise.allSettled(
     threadFetches.map(({ channel, messages }) => fetchThreadReplies(client, channel, messages))
