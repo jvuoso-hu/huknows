@@ -16,7 +16,7 @@ async function identifyExpertsWithAI(candidates, query, allChannelNames = []) {
   if (!candidates.length && !allChannelNames.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
   const messageList = candidates
-    .map((m) => `[${m.userId} | #${m.channelName}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
+    .map((m) => `[${m.userId} | #${m.channelName}${m.isPrivate ? " | PRIVATE" : ""}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
     .join("\n");
 
   const channelNamesSection = allChannelNames.length
@@ -39,8 +39,8 @@ Tasks:
    Prioritize people who explain concepts, answer questions, or show hands-on experience.
    Do NOT rank people who just mention the topic in passing.
 
-2. For each expert, write a personalized "briefMessage" (2 sentences max) explaining specifically
-   why they were selected, referencing what they actually said. This will be sent to them directly.
+2. For each expert, write a personalized "briefMessage" (2 sentences max) explaining why they were selected.
+   If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise on the topic without specifics.
 
 3. Suggest up to 3 relevant channel names:
    - Prefer channels where the topic was actually discussed in the messages above.

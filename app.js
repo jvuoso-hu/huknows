@@ -3,7 +3,11 @@ require("dotenv").config();
 const { App } = require("@slack/bolt");
 const { rankExperts } = require("./services/ranking");
 const { enrichExperts } = require("./slack/userInfo");
-const { buildResultBlocks, buildNoExpertsBlocks, buildBrief } = require("./slack/blocks");
+const {
+  buildResultBlocks,
+  buildNoExpertsBlocks,
+  buildBrief,
+} = require("./slack/blocks");
 const { t } = require("./utils/language");
 const { recordSuccess, recordSearch } = require("./utils/feedback");
 const { buildHomeView } = require("./slack/home");
@@ -32,10 +36,14 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     // Send immediate feedback before the AI call
     await respond({
       response_type: "ephemeral",
-      text: `🔍 _${query}_...`,
+      text: `🔎 _${query}_...`,
     });
 
-    const { lang, experts: ranked, suggestedChannels } = await rankExperts(client, query, command.user_id, logger);
+    const {
+      lang,
+      experts: ranked,
+      suggestedChannels,
+    } = await rankExperts(client, query, command.user_id, logger);
 
     if (!ranked.length) {
       await respond({
@@ -70,16 +78,28 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
   try {
     await ack();
 
-    const { userId: expertUserId, query, example, channelCount, explanation, briefMessage, lang = "es" } = JSON.parse(action.value);
+    const {
+      userId: expertUserId,
+      query,
+      example,
+      channelCount,
+      explanation,
+      briefMessage,
+      lang = "es",
+    } = JSON.parse(action.value);
     const requesterUserId = body.user.id;
 
     const [expertName, opened] = await Promise.all([
-      client.users.info({ user: expertUserId }).then((r) => r.user?.real_name || r.user?.name || expertUserId),
-      client.conversations.open({ users: `${requesterUserId},${expertUserId}` }),
+      client.users
+        .info({ user: expertUserId })
+        .then((r) => r.user?.real_name || r.user?.name || expertUserId),
+      client.conversations.open({
+        users: `${requesterUserId},${expertUserId}`,
+      }),
     ]);
 
     const channelId = opened.channel.id;
-    const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessage);
+    const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang);
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 
@@ -132,7 +152,12 @@ app.event("app_home_opened", async ({ event, client, logger }) => {
 app.action("feedback_helpful", async ({ ack, respond, action }) => {
   await ack();
 
-  const { query, expertUserId, expertName, lang = "es" } = JSON.parse(action.value);
+  const {
+    query,
+    expertUserId,
+    expertName,
+    lang = "es",
+  } = JSON.parse(action.value);
   recordSuccess(query, expertUserId);
 
   await respond({
@@ -141,7 +166,9 @@ app.action("feedback_helpful", async ({ ack, respond, action }) => {
     blocks: [
       {
         type: "context",
-        elements: [{ type: "mrkdwn", text: t(lang, "feedbackThanks", expertName) }],
+        elements: [
+          { type: "mrkdwn", text: t(lang, "feedbackThanks", expertName) },
+        ],
       },
     ],
   });

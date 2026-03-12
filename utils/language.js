@@ -38,6 +38,12 @@ const STRINGS = {
     frequentBadge: (n) => `🔥 Búsqueda frecuente · ${n} ${n === 1 ? "persona encontró" : "personas encontraron"} esto útil`,
     tryChannels: "No encontré expertos claros, pero estos canales podrían ser el lugar indicado para preguntar:",
     noExpertsNoChannels: (q) => `No encontré expertos ni canales relevantes para *${q}*.`,
+    briefGreeting: (name) => `👋 Hola ${name}!`,
+    briefIdentified: `🔎 *HuKnows te identificó como una de las personas más relevantes para ayudar con este tema.*`,
+    briefTopic: (q) => `📌 *Tema:* ${q}`,
+    briefWhy: (reason) => `💬 *Por qué vos:* ${reason}`,
+    briefWhyPrivate: `💬 *Por qué vos:* Identificamos que tenés conocimiento en este tema a través de conversaciones privadas 🔒`,
+    briefFooter: `_⚡ Esta conexión fue generada automáticamente para acelerar la resolución interna de problemas._`,
   },
   en: {
     searching: (q) => `🔍 Searching for experts on _${q}_...`,
@@ -57,6 +63,12 @@ const STRINGS = {
     frequentBadge: (n) => `🔥 Popular search · ${n} ${n === 1 ? "person found" : "people found"} this helpful`,
     tryChannels: "No clear experts found, but these channels might be the right place to ask:",
     noExpertsNoChannels: (q) => `No experts or relevant channels found for *${q}*.`,
+    briefGreeting: (name) => `👋 Hi ${name}!`,
+    briefIdentified: `🔎 *HuKnows identified you as one of the most relevant people to help with this topic.*`,
+    briefTopic: (q) => `📌 *Topic:* ${q}`,
+    briefWhy: (reason) => `💬 *Why you:* ${reason}`,
+    briefWhyPrivate: `💬 *Why you:* We identified your expertise on this topic through private conversations 🔒`,
+    briefFooter: `_⚡ This connection was generated automatically to speed up internal problem solving._`,
   },
 };
 

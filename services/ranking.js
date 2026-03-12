@@ -51,6 +51,7 @@ async function rankExperts(client, query, requesterUserId, logger) {
         userId: message.user,
         text: message.text,
         channelName: channel.name,
+        isPrivate: channel.is_private || false,
       });
 
       if (!userChannels[message.user]) userChannels[message.user] = new Set();
@@ -66,20 +67,28 @@ async function rankExperts(client, query, requesterUserId, logger) {
   return {
     lang: lang || "es",
     suggestedChannels: suggestedChannels || [],
-    experts: aiResults.map((expert) => ({
-      userId: expert.userId,
-      score: expert.score,
-      confidence: expert.confidence,
-      explanation: expert.explanation,
-      briefMessage: expert.briefMessage || null,
-      example: expert.exampleText
-        ? {
-            text: expert.exampleText,
-            channelName: candidates.find((c) => c.userId === expert.userId)?.channelName || "",
-          }
-        : null,
-      channelCount: userChannels[expert.userId]?.size || 0,
-    })),
+    experts: aiResults.map((expert) => {
+      const userCandidates = candidates.filter((c) => c.userId === expert.userId);
+      const hasPrivateSource = userCandidates.some((c) => c.isPrivate);
+      const firstCandidate = userCandidates[0];
+      return {
+        userId: expert.userId,
+        score: expert.score,
+        confidence: expert.confidence,
+        explanation: expert.explanation,
+        briefMessage: expert.briefMessage || null,
+        hasPrivateSource,
+        example: expert.exampleText && !hasPrivateSource
+          ? {
+              text: expert.exampleText,
+              channelName: firstCandidate?.channelName || "",
+            }
+          : hasPrivateSource
+          ? { isPrivate: true, channelName: null }
+          : null,
+        channelCount: userChannels[expert.userId]?.size || 0,
+      };
+    }),
   };
 }
 

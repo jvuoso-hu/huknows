@@ -45,7 +45,10 @@ function buildResultBlocks(query, experts, lang = "es") {
 
     if (explanation) {
       text += `\n_${explanation}_`;
-    } else if (example) {
+    }
+    if (example?.isPrivate) {
+      text += `\n🔒 _Fuente: canal privado_`;
+    } else if (example?.text) {
       const snippet = example.text.slice(0, 120).replace(/\n/g, " ");
       text += `\n_"${snippet}${example.text.length > 120 ? "..." : ""}"_`;
     }
@@ -94,32 +97,29 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
   return blocks;
 }
 
-function buildBrief(query, expertName, explanation, example, channelCount, briefMessage) {
+function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es") {
   const lines = [
-    `👋 Hi ${expertName}!`,
+    t(lang, "briefGreeting", expertName),
     ``,
-    `🧠 *HuKnows identified you as one of the most relevant people to help with this topic.*`,
+    t(lang, "briefIdentified"),
     ``,
-    `📌 *Topic:* ${query}`,
+    t(lang, "briefTopic", query),
   ];
 
-  if (briefMessage) {
+  if (example?.isPrivate) {
+    lines.push(t(lang, "briefWhyPrivate"));
+  } else if (briefMessage) {
     lines.push(`💬 ${briefMessage}`);
   } else if (explanation) {
-    lines.push(`💬 *Why you:* ${explanation}`);
-  } else if (example) {
-    const reason =
-      channelCount > 1
-        ? `you've discussed this across ${channelCount} channels, including *#${example.channelName}*`
-        : `you recently discussed this in *#${example.channelName}*`;
-    lines.push(`💬 *Why you:* ${reason}`);
+    lines.push(t(lang, "briefWhy", explanation));
+  } else if (example?.channelName) {
+    const reason = channelCount > 1
+      ? t(lang, "briefWhy", `${channelCount} channels incl. *#${example.channelName}*`)
+      : t(lang, "briefWhy", `*#${example.channelName}*`);
+    lines.push(reason);
   }
 
-  lines.push(
-    ``,
-    `⚡ This connection was generated automatically to speed up internal problem solving.`
-  );
-
+  lines.push(``, t(lang, "briefFooter"));
   return lines.join("\n");
 }
 
