@@ -8,7 +8,7 @@ async function buildHomeView(client, userId) {
   const blocks = [
     {
       type: "header",
-      text: { type: "plain_text", text: "🧠 HuKnows — El AI que sabe quién sabe" },
+      text: { type: "plain_text", text: "🔍 HuKnows - The AI that knows who knows in Hu." },
     },
     {
       type: "section",
