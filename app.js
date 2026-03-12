@@ -33,62 +33,14 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
 
     recordSearch(command.user_id, query);
 
-    // Try to post a real message for animation (requires bot to be in the channel).
-    // If the bot isn't a member, join first. Falls back to plain respond if unavailable.
-    let loadingTs = null;
-    const channelId = command.channel_id;
-    try {
-      let msg;
-      try {
-        msg = await client.chat.postMessage({ channel: channelId, text: `🔎 _${query}_` });
-      } catch (e) {
-        if (e.data?.error === "channel_not_found" || e.data?.error === "not_in_channel") {
-          await client.conversations.join({ channel: channelId });
-          msg = await client.chat.postMessage({ channel: channelId, text: `🔎 _${query}_` });
-        } else {
-          throw e;
-        }
-      }
-      loadingTs = msg.ts;
-    } catch {
-      // DM or private channel where bot can't join — fall back to a plain ephemeral
-      await respond({ response_type: "ephemeral", text: `🔎 _${query}_...` });
-    }
+    // Immediate feedback
+    await respond({ response_type: "ephemeral", text: `🔎 _${query}_...` });
 
-    // Animate dots by updating the same message (only when we have a ts)
-    let animationStopped = false;
-    let resolveAnim;
-    const animDone = new Promise((r) => { resolveAnim = r; });
-    if (loadingTs) {
-      (async () => {
-        const frames = [".", "..", "..."];
-        let i = 0;
-        while (!animationStopped) {
-          await new Promise((r) => setTimeout(r, 600));
-          if (animationStopped) break;
-          try {
-            await client.chat.update({
-              channel: channelId,
-              ts: loadingTs,
-              text: `🔎 _${query}_${frames[i % frames.length]}`,
-            });
-          } catch {}
-          i++;
-        }
-        resolveAnim();
-      })();
-    } else {
-      resolveAnim();
-    }
-
+    // Single progress callback — replaces the previous ephemeral (max 3 respond calls total)
     const onProgress = async (text) => {
-      if (!animationStopped) {
-        animationStopped = true;
-        await animDone;
-      }
-      if (loadingTs) {
-        try { await client.chat.update({ channel: channelId, ts: loadingTs, text }); } catch {}
-      }
+      try {
+        await respond({ response_type: "ephemeral", replace_original: true, text });
+      } catch {}
     };
 
     const {
@@ -97,17 +49,10 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
       suggestedChannels,
     } = await rankExperts(client, query, command.user_id, logger, onProgress);
 
-    // Stop animation and delete the loading message
-    animationStopped = true;
-    await animDone;
-    if (loadingTs) {
-      await client.chat.delete({ channel: channelId, ts: loadingTs }).catch(() => {});
-    }
-
     if (!ranked.length) {
-      await client.chat.postEphemeral({
-        channel: channelId,
-        user: command.user_id,
+      await respond({
+        response_type: "ephemeral",
+        replace_original: true,
         text: t(lang, "noExperts", query),
         blocks: buildNoExpertsBlocks(query, suggestedChannels, lang),
       });
@@ -117,9 +62,9 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     const experts = await enrichExperts(client, ranked, lang);
     const blocks = buildResultBlocks(query, experts, lang);
 
-    await client.chat.postEphemeral({
-      channel: channelId,
-      user: command.user_id,
+    await respond({
+      response_type: "ephemeral",
+      replace_original: true,
       text: t(lang, "topExperts", query),
       blocks,
     });
