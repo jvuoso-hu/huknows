@@ -11,13 +11,17 @@ function guessLang(text) {
   return words.some((w) => enWords.has(w)) ? "en" : "es";
 }
 
-async function identifyExpertsWithAI(candidates, query, allChannelNames = []) {
+async function identifyExpertsWithAI(candidates, query, allChannelNames = [], userTitles = {}) {
   const hintLang = guessLang(query);
   if (!candidates.length && !allChannelNames.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
   const messageList = candidates
-    .map((m) => `[${m.userId} | #${m.channelName}${m.isPrivate ? " | PRIVATE" : ""}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
+    .map((m) => `[${m.userId}${m.isThread ? " | thread" : ""}${m.isPrivate ? " | PRIVATE" : ""} | #${m.channelName}]: ${m.text.slice(0, 300).replace(/\n/g, " ")}`)
     .join("\n");
+
+  const titlesSection = Object.keys(userTitles).length
+    ? `\nUser roles/titles:\n${Object.entries(userTitles).map(([id, title]) => `- ${id}: ${title}`).join("\n")}`
+    : "";
 
   const channelNamesSection = allChannelNames.length
     ? `\nAll workspace channel names (use for fallback channel suggestions if no messages matched): ${allChannelNames.join(", ")}`
@@ -32,15 +36,20 @@ Query language: ${langInstruction}
 
 Slack messages:
 ${messageList || "(none)"}
+${titlesSection}
 ${channelNamesSection}
 
 Tasks:
 1. Identify up to 3 people who demonstrate the most knowledge on this topic.
    Prioritize people who explain concepts, answer questions, or show hands-on experience.
+   Thread replies (marked "thread") are a stronger expertise signal — weight them more.
+   If a user's role/title is relevant to the topic, use that as additional signal.
+   If a user's role/title is clearly unrelated, you may rank them lower even if they posted.
    Do NOT rank people who just mention the topic in passing.
 
 2. For each expert, write a personalized "briefMessage" (2 sentences max) explaining why they were selected.
-   If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise on the topic without specifics.
+   If their role/title is relevant, mention it naturally. Example: "Como Head of Finance, tus mensajes sobre payroll muestran..."
+   If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise without specifics.
 
 3. Suggest up to 3 relevant channel names:
    - Prefer channels where the topic was actually discussed in the messages above.

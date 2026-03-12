@@ -39,11 +39,17 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
       text: `🔎 _${query}_...`,
     });
 
+    const onProgress = async (text) => {
+      try {
+        await respond({ response_type: "ephemeral", replace_original: true, text });
+      } catch {}
+    };
+
     const {
       lang,
       experts: ranked,
       suggestedChannels,
-    } = await rankExperts(client, query, command.user_id, logger);
+    } = await rankExperts(client, query, command.user_id, logger, onProgress);
 
     if (!ranked.length) {
       await respond({
