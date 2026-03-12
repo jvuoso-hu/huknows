@@ -34,7 +34,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     recordSearch(command.user_id, query);
 
     // Immediate feedback
-    await respond({ response_type: "ephemeral", text: `🔎 _${query}_...` });
+    await respond({ response_type: "ephemeral", text: `🤓☝🏼 I know! Let me find the experts for: _${query}_...` });
 
     // Single progress callback — replaces the previous ephemeral (max 3 respond calls total)
     const onProgress = async (text) => {
