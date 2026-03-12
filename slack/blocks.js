@@ -5,10 +5,11 @@ const CONFIDENCE_EMOJI = {
   "coincidencia fuerte": "🔥", "strong match": "🔥",
   "buena coincidencia": "✅", "good match": "✅",
   "posible coincidencia": "🤔", "possible match": "🤔",
+  "coincidencia moderada": "🟡", "moderate match": "🟡",
 };
 
 function confidenceEmoji(confidence) {
-  return CONFIDENCE_EMOJI[(confidence || "").toLowerCase()] || "🔍";
+  return CONFIDENCE_EMOJI[(confidence || "").toLowerCase()] || "🟡";
 }
 
 function buildResultBlocks(query, experts, lang = "es") {

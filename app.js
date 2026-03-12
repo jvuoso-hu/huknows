@@ -36,18 +36,11 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     // Immediate feedback
     await respond({ response_type: "ephemeral", text: `🤓☝🏼 I know! Let me find the experts for: _${query}_...` });
 
-    // Single progress callback — replaces the previous ephemeral (max 3 respond calls total)
-    const onProgress = async (text) => {
-      try {
-        await respond({ response_type: "ephemeral", replace_original: true, text });
-      } catch {}
-    };
-
     const {
       lang,
       experts: ranked,
       suggestedChannels,
-    } = await rankExperts(client, query, command.user_id, logger, onProgress);
+    } = await rankExperts(client, query, command.user_id, logger);
 
     if (!ranked.length) {
       await respond({
