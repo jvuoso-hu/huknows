@@ -47,10 +47,7 @@ function buildResultBlocks(query, experts, lang = "es") {
       text += `\n_${explanation}_`;
     }
     if (example?.isPrivate) {
-      text += `\n🔒 _Fuente: canal privado_`;
-    } else if (example?.text) {
-      const snippet = example.text.slice(0, 120).replace(/\n/g, " ");
-      text += `\n_"${snippet}${example.text.length > 120 ? "..." : ""}"_`;
+      text += `  🔒`;
     }
 
     blocks.push({
