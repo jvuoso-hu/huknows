@@ -92,7 +92,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 
-    // Ephemeral feedback button in the DM — only the requester sees it
+    // Ephemeral feedback in the DM — two options: helpful or not
     await client.chat.postEphemeral({
       channel: channelId,
       user: requesterUserId,
@@ -112,12 +112,16 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
               action_id: "feedback_helpful",
               value: JSON.stringify({ query, expertUserId, expertName, lang }),
             },
+            {
+              type: "button",
+              text: { type: "plain_text", text: t(lang, "unhelpful") },
+              action_id: "feedback_unhelpful_dm",
+              value: JSON.stringify({ query, expertUserId, expertName, lang }),
+            },
           ],
         },
       ],
     });
-
-    await respond({ response_type: "ephemeral", text: t(lang, "connected", expertName) });
   } catch (error) {
     logger.error("Error in connect_expert:", error);
   }
@@ -132,17 +136,16 @@ app.event("app_home_opened", async ({ event, client, logger }) => {
   }
 });
 
-// pendingSuggestions tracks users who clicked "No fue útil" and are about to suggest someone
 const pendingSuggestions = new Map();
 
-app.action("feedback_unhelpful", async ({ ack, action, respond, body }) => {
+app.action("feedback_unhelpful_dm", async ({ ack, action, respond, body }) => {
   await ack();
-  const { query, expertIds, lang } = JSON.parse(action.value);
-  recordNegativeFeedback(query, expertIds);
+  const { query, expertUserId, lang } = JSON.parse(action.value);
+  recordNegativeFeedback(query, [expertUserId]);
   pendingSuggestions.set(body.user.id, { query, lang });
 
   await respond({
-    response_type: "ephemeral",
+    replace_original: true,
     text: t(lang, "unhelpfulAck", query),
     blocks: [
       {
@@ -151,11 +154,18 @@ app.action("feedback_unhelpful", async ({ ack, action, respond, body }) => {
       },
       {
         type: "actions",
-        elements: [{
-          type: "users_select",
-          placeholder: { type: "plain_text", text: t(lang, "selectExpert") },
-          action_id: "suggest_expert",
-        }],
+        elements: [
+          {
+            type: "users_select",
+            placeholder: { type: "plain_text", text: t(lang, "selectExpert") },
+            action_id: "suggest_expert",
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: t(lang, "skipSuggestion") },
+            action_id: "suggest_expert_skip",
+          },
+        ],
       },
     ],
   });
@@ -176,10 +186,15 @@ app.action("suggest_expert", async ({ ack, action, respond, body, client }) => {
     .catch(() => suggestedUserId);
 
   await respond({
-    response_type: "ephemeral",
     replace_original: true,
     text: t(lang, "suggestionThanks", name),
   });
+});
+
+app.action("suggest_expert_skip", async ({ ack, respond, body }) => {
+  await ack();
+  pendingSuggestions.delete(body.user.id);
+  await respond({ replace_original: true, text: "👍" });
 });
 
 app.action("feedback_helpful", async ({ ack, respond, action }) => {
