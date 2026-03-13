@@ -9,7 +9,7 @@ const {
   buildBrief,
 } = require("./slack/blocks");
 const { t, detectLanguage } = require("./utils/language");
-const { recordSuccess, recordSearch } = require("./utils/feedback");
+const { recordSuccess, recordSearch, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
 const { buildHomeView } = require("./slack/home");
 
 const app = new App({
@@ -117,11 +117,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
       ],
     });
 
-    const chatLink = `https://slack.com/app_redirect?channel=${channelId}`;
-    await respond({
-      response_type: "ephemeral",
-      text: `${t(lang, "connected", expertName)} <${chatLink}|Ir al chat →>`,
-    });
+    await respond({ response_type: "ephemeral", text: t(lang, "connected", expertName) });
   } catch (error) {
     logger.error("Error in connect_expert:", error);
   }
@@ -134,6 +130,56 @@ app.event("app_home_opened", async ({ event, client, logger }) => {
   } catch (error) {
     logger.error("Error building App Home:", error);
   }
+});
+
+// pendingSuggestions tracks users who clicked "No fue útil" and are about to suggest someone
+const pendingSuggestions = new Map();
+
+app.action("feedback_unhelpful", async ({ ack, action, respond, body }) => {
+  await ack();
+  const { query, expertIds, lang } = JSON.parse(action.value);
+  recordNegativeFeedback(query, expertIds);
+  pendingSuggestions.set(body.user.id, { query, lang });
+
+  await respond({
+    response_type: "ephemeral",
+    text: t(lang, "unhelpfulAck", query),
+    blocks: [
+      {
+        type: "section",
+        text: { type: "mrkdwn", text: t(lang, "unhelpfulAck", query) },
+      },
+      {
+        type: "actions",
+        elements: [{
+          type: "users_select",
+          placeholder: { type: "plain_text", text: t(lang, "selectExpert") },
+          action_id: "suggest_expert",
+        }],
+      },
+    ],
+  });
+});
+
+app.action("suggest_expert", async ({ ack, action, respond, body, client }) => {
+  await ack();
+  const suggestedUserId = action.selected_user;
+  const pending = pendingSuggestions.get(body.user.id);
+  if (!pending || !suggestedUserId) return;
+
+  pendingSuggestions.delete(body.user.id);
+  const { query, lang } = pending;
+  recordExpertSuggestion(query, suggestedUserId);
+
+  const name = await client.users.info({ user: suggestedUserId })
+    .then((r) => r.user?.real_name || r.user?.name || suggestedUserId)
+    .catch(() => suggestedUserId);
+
+  await respond({
+    response_type: "ephemeral",
+    replace_original: true,
+    text: t(lang, "suggestionThanks", name),
+  });
 });
 
 app.action("feedback_helpful", async ({ ack, respond, action }) => {

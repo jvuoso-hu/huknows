@@ -2,6 +2,8 @@
 const queryCounts = new Map();       // query -> count
 const expertHelpCounts = new Map();  // expertUserId -> count
 const userSearches = new Map();      // userId -> [{ query, ts }]
+const negativeExperts = new Map();   // `${query}:${userId}` -> count
+const suggestedExperts = new Map();  // `${query}:${userId}` -> count
 
 const MAX_RECENT = 5;
 
@@ -47,8 +49,37 @@ function getRecentSearches(userId) {
   return userSearches.get(userId) || [];
 }
 
+function recordNegativeFeedback(query, expertIds) {
+  const base = query.toLowerCase().trim();
+  for (const userId of expertIds) {
+    const k = `${base}:${userId}`;
+    negativeExperts.set(k, (negativeExperts.get(k) || 0) + 1);
+  }
+}
+
+function recordExpertSuggestion(query, suggestedUserId) {
+  const k = `${query.toLowerCase().trim()}:${suggestedUserId}`;
+  suggestedExperts.set(k, (suggestedExperts.get(k) || 0) + 1);
+}
+
+function getNegativeExperts(query) {
+  const base = query.toLowerCase().trim() + ":";
+  return [...negativeExperts.entries()]
+    .filter(([k]) => k.startsWith(base))
+    .map(([k, count]) => ({ userId: k.slice(base.length), count }));
+}
+
+function getSuggestedExperts(query) {
+  const base = query.toLowerCase().trim() + ":";
+  return [...suggestedExperts.entries()]
+    .filter(([k]) => k.startsWith(base))
+    .map(([k, count]) => ({ userId: k.slice(base.length), count }));
+}
+
 module.exports = {
   recordSuccess, recordSearch,
+  recordNegativeFeedback, recordExpertSuggestion,
+  getNegativeExperts, getSuggestedExperts,
   getSuccessCount, getExpertHelpCount,
   getTopQueries, getTopExperts, getRecentSearches,
 };

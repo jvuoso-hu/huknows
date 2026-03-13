@@ -3,7 +3,7 @@ const { detectLanguage } = require("../utils/language");
 
 const anthropic = new Anthropic();
 
-async function identifyExpertsWithAI(candidates, query, allChannelNames = [], userTitles = {}) {
+async function identifyExpertsWithAI(candidates, query, allChannelNames = [], userTitles = {}, negativeExpertIds = [], suggestedExpertIds = []) {
   const hintLang = detectLanguage(query);
   if (!candidates.length && !allChannelNames.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
@@ -20,6 +20,13 @@ async function identifyExpertsWithAI(candidates, query, allChannelNames = [], us
     : "";
 
   const langInstruction = hintLang === "en" ? "English — respond in English" : `${hintLang} — respond in that language`;
+
+  const negativeSection = negativeExpertIds.length
+    ? `\nUsers marked these experts as NOT helpful for this topic: ${negativeExpertIds.join(", ")} — avoid ranking them unless clearly the best option.`
+    : "";
+  const suggestedSection = suggestedExpertIds.length
+    ? `\nUsers suggested these people as the right experts for this topic: ${suggestedExpertIds.join(", ")} — boost their score if they appear in messages.`
+    : "";
 
   const prompt = `You are analyzing internal Slack messages to identify experts on a topic.
 
@@ -63,7 +70,7 @@ Return ONLY valid JSON:
   "suggestedChannels": ["<channel-name>"]
 }
 
-If no relevant experts found, return experts as [].`;
+If no relevant experts found, return experts as [].${negativeSection}${suggestedSection}`;
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",

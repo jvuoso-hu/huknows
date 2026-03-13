@@ -1,5 +1,6 @@
 const { identifyExpertsWithAI } = require("./aiRanking");
 const cache = require("../utils/cache");
+const { getNegativeExperts, getSuggestedExperts } = require("../utils/feedback");
 
 const MAX_CANDIDATES = 200;
 const MAX_THREADS = 30;
@@ -132,11 +133,15 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
   await onProgress?.(`🧠 _Analizando con IA..._`);
 
   const allChannelNames = channels.map((c) => c.name);
+  const negativeIds = getNegativeExperts(query).map((e) => e.userId);
+  const suggestedIds = getSuggestedExperts(query).map((e) => e.userId);
   const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(
     candidates.slice(0, MAX_CANDIDATES),
     query,
     allChannelNames,
-    userTitles
+    userTitles,
+    negativeIds,
+    suggestedIds
   );
 
   return {

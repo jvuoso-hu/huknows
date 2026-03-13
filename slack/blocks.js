@@ -67,6 +67,16 @@ function buildResultBlocks(query, experts, lang = "es") {
     });
   }
 
+  blocks.push({
+    type: "actions",
+    elements: [{
+      type: "button",
+      text: { type: "plain_text", text: t(lang, "unhelpfulButton") },
+      action_id: "feedback_unhelpful",
+      value: JSON.stringify({ query, expertIds: experts.map((e) => e.userId), lang }),
+    }],
+  });
+
   return blocks;
 }
 

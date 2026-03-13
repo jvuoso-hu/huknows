@@ -45,6 +45,10 @@ const STRINGS = {
     briefWhy: (reason) => `💬 *Por qué vos:* ${reason}`,
     briefWhyPrivate: `💬 *Por qué vos:* Identificamos que tenés conocimiento en este tema a través de conversaciones privadas 🔒`,
     briefFooter: `_⚡ Esta conexión fue generada automáticamente para acelerar la resolución interna de problemas._`,
+    unhelpfulButton: "👎 No fue útil",
+    unhelpfulAck: (q) => `Gracias por el feedback. ¿Quién sería la persona indicada para responder sobre _${q}_?`,
+    selectExpert: "Seleccioná a alguien...",
+    suggestionThanks: (name) => `✅ Anotado. Le vamos a dar más peso a *${name}* en búsquedas similares.`,
   },
   en: {
     iKnow: (q) => `🤓☝🏼 I know! Let me find the experts for: _${q}_...`,
@@ -71,6 +75,10 @@ const STRINGS = {
     briefWhy: (reason) => `💬 *Why you:* ${reason}`,
     briefWhyPrivate: `💬 *Why you:* We identified your expertise on this topic through private conversations 🔒`,
     briefFooter: `_⚡ This connection was generated automatically to speed up internal problem solving._`,
+    unhelpfulButton: "👎 Not helpful",
+    unhelpfulAck: (q) => `Thanks for the feedback. Who would be the right person to answer about _${q}_?`,
+    selectExpert: "Select someone...",
+    suggestionThanks: (name) => `✅ Got it. *${name}* will be prioritized for similar searches.`,
   },
 };
 
