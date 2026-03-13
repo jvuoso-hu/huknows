@@ -84,14 +84,9 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
     const requesterUserId = body.user.id;
 
     const [expertName, opened] = await Promise.all([
-      client.users
-        .info({ user: expertUserId })
-        .then((r) => r.user?.real_name || r.user?.name || expertUserId),
-      client.conversations.open({
-        users: `${requesterUserId},${expertUserId}`,
-      }),
+      client.users.info({ user: expertUserId }).then((r) => r.user?.real_name || r.user?.name || expertUserId),
+      client.conversations.open({ users: `${requesterUserId},${expertUserId}` }),
     ]);
-
     const channelId = opened.channel.id;
     const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang);
 
