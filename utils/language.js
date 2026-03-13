@@ -21,6 +21,7 @@ function detectLanguage(text) {
 
 const STRINGS = {
   es: {
+    iKnow: (q) => `🤓☝🏼 ¡Lo sé! Déjame encontrar los expertos en: _${q}_...`,
     searching: (q) => `🔍 Buscando expertos en _${q}_...`,
     noExperts: (q) => `No encontré expertos para *${q}*.`,
     noQuery: "Usá el comando así: `/huknows <tema o problema>`",
@@ -46,6 +47,7 @@ const STRINGS = {
     briefFooter: `_⚡ Esta conexión fue generada automáticamente para acelerar la resolución interna de problemas._`,
   },
   en: {
+    iKnow: (q) => `🤓☝🏼 I know! Let me find the experts for: _${q}_...`,
     searching: (q) => `🔍 Searching for experts on _${q}_...`,
     noExperts: (q) => `No clear experts found for *${q}*.`,
     noQuery: "Usage: `/huknows <topic or problem>`",

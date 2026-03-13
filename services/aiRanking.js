@@ -1,18 +1,10 @@
 const Anthropic = require("@anthropic-ai/sdk");
+const { detectLanguage } = require("../utils/language");
 
 const anthropic = new Anthropic();
 
-function guessLang(text) {
-  if (/[áéíóúüñ¿¡]/i.test(text)) return "es";
-  if (/[àâçéèêëîïôùûü]/i.test(text)) return "fr";
-  if (/[ãõ]/i.test(text)) return "pt";
-  const enWords = new Set(["the", "for", "and", "with", "about", "how", "who", "what", "our", "from", "by", "has", "can", "into"]);
-  const words = text.toLowerCase().split(/\s+/);
-  return words.some((w) => enWords.has(w)) ? "en" : "es";
-}
-
 async function identifyExpertsWithAI(candidates, query, allChannelNames = [], userTitles = {}) {
-  const hintLang = guessLang(query);
+  const hintLang = detectLanguage(query);
   if (!candidates.length && !allChannelNames.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
   const messageList = candidates

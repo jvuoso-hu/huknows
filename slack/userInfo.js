@@ -2,9 +2,10 @@ const { interpretAvailabilityBatch } = require("../services/aiStatus");
 
 function formatTime(unixTs) {
   if (!unixTs || unixTs === 0) return null;
-  return new Date(unixTs * 1000).toLocaleTimeString("en", {
+  return new Date(unixTs * 1000).toLocaleTimeString("es-AR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Argentina/Buenos_Aires",
   });
 }
 
@@ -40,10 +41,12 @@ async function enrichExperts(client, experts, lang = "es") {
   // Map availabilities back by userId (safer than index)
   const availMap = Object.fromEntries(availabilities.map((a) => [a.userId, a]));
 
-  return rawData.map((user) => ({
-    ...user,
-    dnd: availMap[user.userId] || { emoji: "⚪", label: "?" },
-  }));
+  return rawData.map((user) => {
+    const avail = availMap[user.userId] || { emoji: "⚪", label: "?" };
+    // If the user set their own status emoji, use it instead of the color circle
+    const emoji = user.statusEmoji || avail.emoji;
+    return { ...user, dnd: { emoji, label: avail.label } };
+  });
 }
 
 module.exports = { enrichExperts };

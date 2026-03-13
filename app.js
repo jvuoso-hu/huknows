@@ -8,7 +8,7 @@ const {
   buildNoExpertsBlocks,
   buildBrief,
 } = require("./slack/blocks");
-const { t } = require("./utils/language");
+const { t, detectLanguage } = require("./utils/language");
 const { recordSuccess, recordSearch } = require("./utils/feedback");
 const { buildHomeView } = require("./slack/home");
 
@@ -33,8 +33,9 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
 
     recordSearch(command.user_id, query);
 
-    // Immediate feedback
-    await respond({ response_type: "ephemeral", text: `🤓☝🏼 I know! Let me find the experts for: _${query}_...` });
+    // Immediate feedback — language-aware
+    const queryLang = detectLanguage(query);
+    await respond({ response_type: "ephemeral", text: t(queryLang, "iKnow", query) });
 
     const {
       lang,
