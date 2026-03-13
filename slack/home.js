@@ -1,4 +1,25 @@
+const Anthropic = require("@anthropic-ai/sdk");
 const { getTopQueries, getTopExperts, getRecentSearches } = require("../utils/feedback");
+
+const anthropic = new Anthropic();
+
+async function groupTopQueries(queries) {
+  if (queries.length <= 1) return queries.map((q) => ({ topic: q.query, count: q.count }));
+  const list = queries.map((q) => `- "${q.query}" (${q.count})`).join("\n");
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 300,
+      messages: [{
+        role: "user",
+        content: `Group these Slack search queries by topic. Queries about the same subject should be merged and their counts summed. Keep truly different topics separate. Use a short, clear topic name.\n\nQueries:\n${list}\n\nReturn ONLY valid JSON array sorted by count desc:\n[{"topic": "<topic name>", "count": <total>}]`,
+      }],
+    });
+    const match = response.content[0].text.trim().match(/\[[\s\S]*\]/);
+    if (match) return JSON.parse(match[0]);
+  } catch {}
+  return queries.map((q) => ({ topic: q.query, count: q.count }));
+}
 
 async function buildHomeView(client, userId) {
   const topQueries = getTopQueries(5);
@@ -34,14 +55,15 @@ async function buildHomeView(client, userId) {
     blocks.push({ type: "divider" });
   }
 
-  // Top queries across workspace
+  // Top queries across workspace — semantically grouped
   if (topQueries.length > 0) {
+    const grouped = await groupTopQueries(topQueries);
     blocks.push({
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*🔥 Temas más buscados*\n${topQueries
-          .map((q) => `• _${q.query}_ · ${q.count} ${q.count === 1 ? "búsqueda" : "búsquedas"}`)
+        text: `*🔥 Temas más buscados*\n${grouped
+          .map((q) => `• _${q.topic}_ · ${q.count} ${q.count === 1 ? "búsqueda" : "búsquedas"}`)
           .join("\n")}`,
       },
     });

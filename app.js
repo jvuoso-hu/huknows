@@ -123,10 +123,11 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
     });
 
     if (body.container?.channel_id) {
+      const chatLink = `https://slack.com/app_redirect?channel=${channelId}`;
       await client.chat.postEphemeral({
         channel: body.container.channel_id,
         user: requesterUserId,
-        text: t(lang, "connected", expertName),
+        text: `${t(lang, "connected", expertName)} <${chatLink}|Ir al chat →>`,
       });
     }
   } catch (error) {
