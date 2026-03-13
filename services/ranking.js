@@ -136,6 +136,18 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
   const negativeIds = getNegativeExperts(query).map((e) => e.userId);
   const suggestedIds = getSuggestedExperts(query).map((e) => e.userId);
   const suggestedSet = new Set(suggestedIds);
+
+  // Ensure suggested experts appear in candidates even if they haven't posted about this topic
+  for (const userId of suggestedIds) {
+    if (!candidates.some((c) => c.userId === userId)) {
+      candidates.push({
+        userId,
+        text: `[colleague-suggested expert for this topic — no matching messages found but human-validated]`,
+        channelName: "suggestion",
+        isPrivate: false,
+      });
+    }
+  }
   const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(
     candidates.slice(0, MAX_CANDIDATES),
     query,

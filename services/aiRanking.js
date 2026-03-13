@@ -22,10 +22,10 @@ async function identifyExpertsWithAI(candidates, query, allChannelNames = [], us
   const langInstruction = hintLang === "en" ? "English — respond in English" : `${hintLang} — respond in that language`;
 
   const negativeSection = negativeExpertIds.length
-    ? `\nUsers marked these experts as NOT helpful for this topic: ${negativeExpertIds.join(", ")} — avoid ranking them unless clearly the best option.`
+    ? `\nFor this specific topic only, a colleague indicated these users were not the right match: ${negativeExpertIds.join(", ")} — avoid ranking them for this query. They may still be experts on other topics.`
     : "";
   const suggestedSection = suggestedExpertIds.length
-    ? `\nUsers suggested these people as the right experts for this topic: ${suggestedExpertIds.join(", ")} — boost their score if they appear in messages.`
+    ? `\nA colleague explicitly identified these people as the right experts for this topic: ${suggestedExpertIds.join(", ")} — treat this as a strong signal and include them in the top results even if their message history on this topic is limited.`
     : "";
 
   const prompt = `You are analyzing internal Slack messages to identify experts on a topic.
