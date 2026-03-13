@@ -68,7 +68,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
   }
 });
 
-app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
+app.action("connect_expert", async ({ ack, body, client, action, respond, logger }) => {
   try {
     await ack();
 
@@ -117,14 +117,11 @@ app.action("connect_expert", async ({ ack, body, client, action, logger }) => {
       ],
     });
 
-    if (body.container?.channel_id) {
-      const chatLink = `https://slack.com/app_redirect?channel=${channelId}`;
-      await client.chat.postEphemeral({
-        channel: body.container.channel_id,
-        user: requesterUserId,
-        text: `${t(lang, "connected", expertName)} <${chatLink}|Ir al chat →>`,
-      });
-    }
+    const chatLink = `https://slack.com/app_redirect?channel=${channelId}`;
+    await respond({
+      response_type: "ephemeral",
+      text: `${t(lang, "connected", expertName)} <${chatLink}|Ir al chat →>`,
+    });
   } catch (error) {
     logger.error("Error in connect_expert:", error);
   }

@@ -14,6 +14,8 @@ function recordSuccess(query, expertUserId) {
 }
 
 function recordSearch(userId, query) {
+  const key = query.toLowerCase().trim();
+  queryCounts.set(key, (queryCounts.get(key) || 0) + 1);
   const list = userSearches.get(userId) || [];
   list.unshift({ query, ts: Date.now() });
   userSearches.set(userId, list.slice(0, MAX_RECENT));
