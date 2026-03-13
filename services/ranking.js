@@ -135,6 +135,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
   const allChannelNames = channels.map((c) => c.name);
   const negativeIds = getNegativeExperts(query).map((e) => e.userId);
   const suggestedIds = getSuggestedExperts(query).map((e) => e.userId);
+  const suggestedSet = new Set(suggestedIds);
   const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(
     candidates.slice(0, MAX_CANDIDATES),
     query,
@@ -157,6 +158,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
         confidence: expert.confidence,
         explanation: expert.explanation,
         briefMessage: expert.briefMessage || null,
+        wasRecommended: suggestedSet.has(expert.userId),
         hasPrivateSource,
         example: expert.exampleText && !hasPrivateSource
           ? { text: expert.exampleText, channelName: firstCandidate?.channelName || "" }

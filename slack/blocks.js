@@ -22,7 +22,7 @@ function buildResultBlocks(query, experts, lang = "es") {
     },
   ];
 
-  if (successCount > 0) {
+  if (successCount > 5) {
     blocks.push({
       type: "context",
       elements: [{ type: "mrkdwn", text: t(lang, "frequentBadge", successCount) }],
@@ -32,7 +32,7 @@ function buildResultBlocks(query, experts, lang = "es") {
   blocks.push({ type: "divider" });
 
   for (let i = 0; i < experts.length; i++) {
-    const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount } = experts[i];
+    const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount, wasRecommended } = experts[i];
 
     const channelInfo =
       channelCount > 1
@@ -46,6 +46,9 @@ function buildResultBlocks(query, experts, lang = "es") {
 
     if (explanation) {
       text += `\n_${explanation}_`;
+    }
+    if (wasRecommended) {
+      text += `\n${t(lang, "wasRecommended")}`;
     }
     if (example?.isPrivate) {
       text += `  🔒`;
@@ -61,7 +64,8 @@ function buildResultBlocks(query, experts, lang = "es") {
         action_id: "connect_expert",
         value: JSON.stringify({
           userId, query, example: example || null, channelCount,
-          explanation: explanation || null, briefMessage: briefMessage || null, lang,
+          explanation: explanation || null, briefMessage: briefMessage || null,
+          wasRecommended: wasRecommended || false, lang,
         }),
       },
     });
@@ -95,7 +99,7 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
   return blocks;
 }
 
-function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es") {
+function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es", wasRecommended = false) {
   const lines = [
     t(lang, "briefGreeting", expertName),
     ``,
@@ -117,6 +121,9 @@ function buildBrief(query, expertName, explanation, example, channelCount, brief
     lines.push(reason);
   }
 
+  if (wasRecommended) {
+    lines.push(``, t(lang, "briefWasRecommended"));
+  }
   lines.push(``, t(lang, "briefFooter"));
   return lines.join("\n");
 }

@@ -79,6 +79,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
       channelCount,
       explanation,
       briefMessage,
+      wasRecommended = false,
       lang = "es",
     } = JSON.parse(action.value);
     const requesterUserId = body.user.id;
@@ -88,7 +89,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
       client.conversations.open({ users: `${requesterUserId},${expertUserId}` }),
     ]);
     const channelId = opened.channel.id;
-    const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang);
+    const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang, wasRecommended);
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 
