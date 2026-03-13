@@ -10,7 +10,7 @@ const {
 } = require("./slack/blocks");
 const { t, detectLanguage } = require("./utils/language");
 const { recordSuccess, recordSearch, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
-// const { syncExpertPoints } = require("./utils/airtable"); // disabled — evaluating sheets
+const { syncExpertPoints } = require("./utils/sheets");
 const { buildHomeView } = require("./slack/home");
 
 const app = new App({
@@ -209,7 +209,7 @@ app.action("feedback_helpful", async ({ ack, respond, action }) => {
     lang = "es",
   } = JSON.parse(action.value);
   recordSuccess(query, expertUserId);
-  // syncExpertPoints(expertUserId, expertName, query); // disabled — evaluating sheets
+  syncExpertPoints(expertUserId, expertName, query); // fire-and-forget
 
   await respond({
     replace_original: true,
