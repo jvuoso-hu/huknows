@@ -12,23 +12,64 @@ function confidenceEmoji(confidence) {
   return CONFIDENCE_EMOJI[(confidence || "").toLowerCase()] || "🟡";
 }
 
-function buildMiniappBlock(miniappMatch, lang) {
-  const { miniapp, squad, emName, pmName, type } = miniappMatch;
-  const lines = [`🧩 *¿Es sobre ${miniapp}?* _(${squad})_`];
+function buildMiniappBlock(miniappMatch, lang, query = "") {
+  const { miniapp, squad, emName, pmName, emUserId, pmUserId, type } = miniappMatch;
 
-  if (type === "technical" && emName) {
-    lines.push(`• Para algo técnico → hablar con *${emName}* _(EM)_`);
-  } else if (type === "product" && pmName) {
-    lines.push(`• Para algo de producto → hablar con *${pmName}* _(PM)_`);
-  } else {
-    if (emName) lines.push(`• Algo técnico → *${emName}* _(Engineering Manager)_`);
-    if (pmName) lines.push(`• Algo de producto → *${pmName}* _(Product Manager)_`);
+  const showEM = emName && (type === "technical" || type === "both");
+  const showPM = pmName && (type === "product" || type === "both");
+
+  const lines = [`🧩 *¿Es sobre la Mini-App ${miniapp}?* _(${squad})_`];
+  if (showEM) lines.push(`• Algo técnico → hablar con *${emName}* _(Engineering Manager)_`);
+  if (showPM) lines.push(`• Algo de producto → hablar con *${pmName}* _(Product Manager)_`);
+
+  const blocks = [
+    { type: "section", text: { type: "mrkdwn", text: lines.join("\n") } },
+  ];
+
+  // Connect buttons for resolved users
+  const buttons = [];
+  if (showEM && emUserId) {
+    buttons.push({
+      type: "button",
+      text: { type: "plain_text", text: `Conectar con ${emName}` },
+      style: "primary",
+      action_id: "connect_expert",
+      value: JSON.stringify({
+        userId: emUserId,
+        query,
+        example: null,
+        channelCount: 0,
+        explanation: `Engineering Manager de la Mini-App ${miniapp}`,
+        briefMessage: `Como *Engineering Manager* de *${miniapp}*, te contactamos porque la consulta parece ser de índole técnica.`,
+        wasRecommended: false,
+        lang,
+      }),
+    });
+  }
+  if (showPM && pmUserId) {
+    buttons.push({
+      type: "button",
+      text: { type: "plain_text", text: `Conectar con ${pmName}` },
+      style: "primary",
+      action_id: "connect_expert",
+      value: JSON.stringify({
+        userId: pmUserId,
+        query,
+        example: null,
+        channelCount: 0,
+        explanation: `Product Manager de la Mini-App ${miniapp}`,
+        briefMessage: `Como *Product Manager* de *${miniapp}*, te contactamos porque la consulta parece estar relacionada con producto o experiencia.`,
+        wasRecommended: false,
+        lang,
+      }),
+    });
   }
 
-  return {
-    type: "section",
-    text: { type: "mrkdwn", text: lines.join("\n") },
-  };
+  if (buttons.length) {
+    blocks.push({ type: "actions", elements: buttons });
+  }
+
+  return blocks;
 }
 
 function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
@@ -92,7 +133,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
 
   if (miniappMatch) {
     blocks.push({ type: "divider" });
-    blocks.push(buildMiniappBlock(miniappMatch, lang));
+    blocks.push(...buildMiniappBlock(miniappMatch, lang, query));
   }
 
   return blocks;
@@ -122,7 +163,7 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es", miniappMatc
 
   if (miniappMatch) {
     blocks.push({ type: "divider" });
-    blocks.push(buildMiniappBlock(miniappMatch, lang));
+    blocks.push(...buildMiniappBlock(miniappMatch, lang, query));
   }
 
   return blocks;

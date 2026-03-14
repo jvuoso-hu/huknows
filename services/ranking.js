@@ -6,6 +6,27 @@ const { getTeamProfiles, getMiniappOwners } = require("../utils/sheets");
 const MAX_CANDIDATES = 200;
 const MAX_THREADS = 30;
 
+async function getUserDirectory(client) {
+  const cacheKey = "user_directory";
+  const cached = cache.get(cacheKey);
+  if (cached) return cached;
+
+  const directory = new Map(); // lowercase real_name → userId
+  let cursor;
+  do {
+    const result = await client.users.list({ limit: 200, cursor });
+    for (const user of result.members || []) {
+      if (user.deleted || user.is_bot) continue;
+      const name = user.real_name || user.name;
+      if (name) directory.set(name.toLowerCase().trim(), user.id);
+    }
+    cursor = result.response_metadata?.next_cursor;
+  } while (cursor);
+
+  cache.set(cacheKey, directory);
+  return directory;
+}
+
 async function getAllChannels(client, logger) {
   const channels = [];
   let cursor;
@@ -132,10 +153,11 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
 
   // Fetch titles for unique users appearing in candidates
   const uniqueUserIds = [...new Set(candidates.map((c) => c.userId))];
-  const [{ titles: slackTitles, realNames }, teamProfiles, miniappOwners] = await Promise.all([
+  const [{ titles: slackTitles, realNames }, teamProfiles, miniappOwners, userDirectory] = await Promise.all([
     fetchUserTitles(client, uniqueUserIds),
     getTeamProfiles(),
     getMiniappOwners(),
+    getUserDirectory(client),
   ]);
 
   // Merge Slack titles with Sheet2 role/area, matched by real name (case-insensitive)
@@ -178,10 +200,19 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
     miniappOwners
   );
 
+  // Resolve EM/PM names to Slack user IDs using the workspace directory
+  const resolvedMiniappMatch = miniappMatch
+    ? {
+        ...miniappMatch,
+        emUserId: miniappMatch.emName ? (userDirectory.get(miniappMatch.emName.toLowerCase().trim()) || null) : null,
+        pmUserId: miniappMatch.pmName ? (userDirectory.get(miniappMatch.pmName.toLowerCase().trim()) || null) : null,
+      }
+    : null;
+
   return {
     lang: lang || "es",
     suggestedChannels: suggestedChannels || [],
-    miniappMatch: miniappMatch || null,
+    miniappMatch: resolvedMiniappMatch,
     experts: aiResults.map((expert) => {
       const userCandidates = candidates.filter((c) => c.userId === expert.userId);
       const hasPrivateSource = userCandidates.some((c) => c.isPrivate);
