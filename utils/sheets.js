@@ -1,5 +1,8 @@
 const { google } = require("googleapis");
 
+const teamProfilesCache = { data: null, ts: 0 };
+const TEAM_CACHE_TTL = 5 * 60 * 1000;
+
 function getClient() {
   return new google.auth.GoogleAuth({
     credentials: {
@@ -47,4 +50,31 @@ async function syncExpertPoints(userId, name, query) {
   }
 }
 
-module.exports = { syncExpertPoints };
+async function getTeamProfiles() {
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+  if (!sheetId) return new Map();
+
+  if (teamProfilesCache.data && Date.now() - teamProfilesCache.ts < TEAM_CACHE_TTL) {
+    return teamProfilesCache.data;
+  }
+
+  try {
+    const sheets = google.sheets({ version: "v4", auth: getClient() });
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "Sheet2!A:C" });
+    const rows = res.data.values || [];
+    const map = new Map();
+    // Expected columns: Name | Role | Area (row 0 = headers)
+    for (let i = 1; i < rows.length; i++) {
+      const [name, role, area] = rows[i];
+      if (name) map.set(name.toLowerCase().trim(), { role: role || "", area: area || "" });
+    }
+    teamProfilesCache.data = map;
+    teamProfilesCache.ts = Date.now();
+    return map;
+  } catch (e) {
+    console.error("Sheet2 load error:", e.message);
+    return new Map();
+  }
+}
+
+module.exports = { syncExpertPoints, getTeamProfiles };

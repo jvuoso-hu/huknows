@@ -1,6 +1,7 @@
 const { identifyExpertsWithAI } = require("./aiRanking");
 const cache = require("../utils/cache");
 const { getNegativeExperts, getSuggestedExperts } = require("../utils/feedback");
+const { getTeamProfiles } = require("../utils/sheets");
 
 const MAX_CANDIDATES = 200;
 const MAX_THREADS = 30;
@@ -47,16 +48,19 @@ async function fetchThreadReplies(client, channel, messages) {
 
 async function fetchUserTitles(client, userIds) {
   const titles = {};
+  const realNames = {};
   await Promise.allSettled(
     userIds.map(async (userId) => {
       try {
         const r = await client.users.info({ user: userId });
         const title = r.user?.profile?.title;
+        const realName = r.user?.real_name || r.user?.name;
         if (title) titles[userId] = title;
+        if (realName) realNames[userId] = realName;
       } catch {}
     })
   );
-  return titles;
+  return { titles, realNames };
 }
 
 async function rankExperts(client, query, requesterUserId, logger, onProgress) {
@@ -128,7 +132,20 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
 
   // Fetch titles for unique users appearing in candidates
   const uniqueUserIds = [...new Set(candidates.map((c) => c.userId))];
-  const userTitles = await fetchUserTitles(client, uniqueUserIds);
+  const [{ titles: slackTitles, realNames }, teamProfiles] = await Promise.all([
+    fetchUserTitles(client, uniqueUserIds),
+    getTeamProfiles(),
+  ]);
+
+  // Merge Slack titles with Sheet2 role/area, matched by real name (case-insensitive)
+  const userTitles = { ...slackTitles };
+  for (const [userId, name] of Object.entries(realNames)) {
+    const profile = teamProfiles.get(name.toLowerCase().trim());
+    if (profile) {
+      const parts = [profile.role, profile.area].filter(Boolean).join(" / ");
+      userTitles[userId] = parts + (slackTitles[userId] ? ` · ${slackTitles[userId]}` : "");
+    }
+  }
 
   await onProgress?.(`🧠 _Analizando con IA..._`);
 
