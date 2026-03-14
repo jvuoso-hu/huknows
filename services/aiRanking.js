@@ -97,6 +97,7 @@ Include "miniappMatch" only if the query is clearly about a specific miniapp.${m
   });
 
   const text = response.content[0].text.trim();
+  console.log("[aiRanking] raw response:", text.slice(0, 500));
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) return { lang: hintLang, experts: [], suggestedChannels: [] };
 

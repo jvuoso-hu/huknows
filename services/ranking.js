@@ -148,6 +148,8 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
     }
   }
 
+  logger.info(`Miniapp owners loaded: ${miniappOwners.length} entries — ${miniappOwners.map(m => m.miniapp).join(", ")}`);
+
   await onProgress?.(`🧠 _Analizando con IA..._`);
 
   const allChannelNames = channels.map((c) => c.name);
