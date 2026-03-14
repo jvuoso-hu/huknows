@@ -98,7 +98,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   return blocks;
 }
 
-function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
+function buildNoExpertsBlocks(query, suggestedChannels, lang = "es", miniappMatch = null) {
   const blocks = [
     {
       type: "header",
@@ -118,6 +118,11 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es") {
       type: "section",
       text: { type: "mrkdwn", text: t(lang, "noExpertsNoChannels", query) },
     });
+  }
+
+  if (miniappMatch) {
+    blocks.push({ type: "divider" });
+    blocks.push(buildMiniappBlock(miniappMatch, lang));
   }
 
   return blocks;

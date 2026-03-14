@@ -50,7 +50,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
         response_type: "ephemeral",
         replace_original: true,
         text: t(lang, "noExperts", query),
-        blocks: buildNoExpertsBlocks(query, suggestedChannels, lang),
+        blocks: buildNoExpertsBlocks(query, suggestedChannels, lang, miniappMatch),
       });
       return;
     }
