@@ -1,7 +1,7 @@
 const { identifyExpertsWithAI } = require("./aiRanking");
 const cache = require("../utils/cache");
 const { getNegativeExperts, getSuggestedExperts } = require("../utils/feedback");
-const { getTeamProfiles } = require("../utils/sheets");
+const { getTeamProfiles, getMiniappOwners } = require("../utils/sheets");
 
 const MAX_CANDIDATES = 200;
 const MAX_THREADS = 30;
@@ -132,9 +132,10 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
 
   // Fetch titles for unique users appearing in candidates
   const uniqueUserIds = [...new Set(candidates.map((c) => c.userId))];
-  const [{ titles: slackTitles, realNames }, teamProfiles] = await Promise.all([
+  const [{ titles: slackTitles, realNames }, teamProfiles, miniappOwners] = await Promise.all([
     fetchUserTitles(client, uniqueUserIds),
     getTeamProfiles(),
+    getMiniappOwners(),
   ]);
 
   // Merge Slack titles with Sheet2 role/area, matched by real name (case-insensitive)
@@ -165,18 +166,20 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
       });
     }
   }
-  const { lang, experts: aiResults, suggestedChannels } = await identifyExpertsWithAI(
+  const { lang, experts: aiResults, suggestedChannels, miniappMatch } = await identifyExpertsWithAI(
     candidates.slice(0, MAX_CANDIDATES),
     query,
     allChannelNames,
     userTitles,
     negativeIds,
-    suggestedIds
+    suggestedIds,
+    miniappOwners
   );
 
   return {
     lang: lang || "es",
     suggestedChannels: suggestedChannels || [],
+    miniappMatch: miniappMatch || null,
     experts: aiResults.map((expert) => {
       const userCandidates = candidates.filter((c) => c.userId === expert.userId);
       const hasPrivateSource = userCandidates.some((c) => c.isPrivate);

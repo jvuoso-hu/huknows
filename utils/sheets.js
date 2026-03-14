@@ -1,6 +1,7 @@
 const { google } = require("googleapis");
 
 const teamProfilesCache = { data: null, ts: 0 };
+const miniappOwnersCache = { data: null, ts: 0 };
 const TEAM_CACHE_TTL = 5 * 60 * 1000;
 
 function getClient() {
@@ -77,4 +78,35 @@ async function getTeamProfiles() {
   }
 }
 
-module.exports = { syncExpertPoints, getTeamProfiles };
+async function getMiniappOwners() {
+  const sheetId = process.env.GOOGLE_SHEET_ID;
+  if (!sheetId) return [];
+
+  if (miniappOwnersCache.data && Date.now() - miniappOwnersCache.ts < TEAM_CACHE_TTL) {
+    return miniappOwnersCache.data;
+  }
+
+  try {
+    const sheets = google.sheets({ version: "v4", auth: getClient() });
+    const res = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: "Sheet3!A:D" });
+    const rows = res.data.values || [];
+    const result = [];
+    // Expected columns: Squad | Miniapp (comma-separated) | EM | PM
+    for (let i = 1; i < rows.length; i++) {
+      const [squad, miniappsRaw, em, pm] = rows[i];
+      if (!miniappsRaw) continue;
+      for (const miniapp of miniappsRaw.split(",")) {
+        const name = miniapp.trim();
+        if (name) result.push({ squad: squad || "", miniapp: name, em: em || "", pm: pm || "" });
+      }
+    }
+    miniappOwnersCache.data = result;
+    miniappOwnersCache.ts = Date.now();
+    return result;
+  } catch (e) {
+    console.error("Sheet3 load error:", e.message);
+    return [];
+  }
+}
+
+module.exports = { syncExpertPoints, getTeamProfiles, getMiniappOwners };

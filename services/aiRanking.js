@@ -3,7 +3,7 @@ const { detectLanguage } = require("../utils/language");
 
 const anthropic = new Anthropic();
 
-async function identifyExpertsWithAI(candidates, query, allChannelNames = [], userTitles = {}, negativeExpertIds = [], suggestedExpertIds = []) {
+async function identifyExpertsWithAI(candidates, query, allChannelNames = [], userTitles = {}, negativeExpertIds = [], suggestedExpertIds = [], miniappOwners = []) {
   const hintLang = detectLanguage(query);
   if (!candidates.length && !allChannelNames.length) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
@@ -20,6 +20,10 @@ async function identifyExpertsWithAI(candidates, query, allChannelNames = [], us
     : "";
 
   const langInstruction = hintLang === "en" ? "English — respond in English" : `${hintLang} — respond in that language`;
+
+  const miniappSection = miniappOwners.length
+    ? `\nMiniapp ownership (Squad → Miniapp → EM → PM):\n${miniappOwners.map((m) => `- ${m.miniapp} (${m.squad}) → EM: ${m.em}, PM: ${m.pm}`).join("\n")}`
+    : "";
 
   const negativeSection = negativeExpertIds.length
     ? `\nFor this specific topic only, a colleague indicated these users were not the right match: ${negativeExpertIds.join(", ")} — avoid ranking them for this query. They may still be experts on other topics.`
@@ -47,10 +51,16 @@ Tasks:
    Do NOT rank people who just mention the topic in passing.
 
 2. For each expert, write a personalized "briefMessage" (2 sentences max) explaining why they were selected.
-   If their role/title is relevant, mention it naturally. Example: "Como Head of Finance, tus mensajes sobre payroll muestran..."
+   If their role/title is relevant, mention it naturally and wrap the role/title in Slack bold (*role*). Example: "Como *Head of Finance*, tus mensajes sobre payroll muestran..."
    If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise without specifics.
 
-3. Suggest up to 3 relevant channel names:
+3. If miniapp ownership data is provided and the query seems to be about one of those miniapps (exact or similar name/topic), include a "miniappMatch" field:
+   - Match the closest miniapp name
+   - Set emName and pmName from the ownership data
+   - If query language suggests a technical issue → set "type": "technical"; if product/UX/feature → "type": "product"; if unclear → "type": "both"
+   If the query is not about any miniapp, omit "miniappMatch" entirely.
+
+4. Suggest up to 3 relevant channel names:
    - Prefer channels where the topic was actually discussed in the messages above.
    - If none found, interpret the channel names list and suggest any whose name implies relevance to the topic.
 
@@ -67,10 +77,18 @@ Return ONLY valid JSON:
       "exampleText": "<most relevant snippet from their messages, max 120 chars>"
     }
   ],
-  "suggestedChannels": ["<channel-name>"]
+  "suggestedChannels": ["<channel-name>"],
+  "miniappMatch": {
+    "miniapp": "<matched miniapp name>",
+    "squad": "<squad name>",
+    "emName": "<EM full name>",
+    "pmName": "<PM full name>",
+    "type": "<'technical' | 'product' | 'both'>"
+  }
 }
 
-If no relevant experts found, return experts as [].${negativeSection}${suggestedSection}`;
+If no relevant experts found, return experts as [].
+Include "miniappMatch" only if the query is clearly about a specific miniapp.${miniappSection}${negativeSection}${suggestedSection}`;
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -87,6 +105,7 @@ If no relevant experts found, return experts as [].${negativeSection}${suggested
     lang: result.lang || hintLang,
     experts: result.experts || [],
     suggestedChannels: result.suggestedChannels || [],
+    miniappMatch: result.miniappMatch || null,
   };
 }
 

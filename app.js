@@ -42,6 +42,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
       lang,
       experts: ranked,
       suggestedChannels,
+      miniappMatch,
     } = await rankExperts(client, query, command.user_id, logger);
 
     if (!ranked.length) {
@@ -55,7 +56,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     }
 
     const experts = await enrichExperts(client, ranked, lang);
-    const blocks = buildResultBlocks(query, experts, lang);
+    const blocks = buildResultBlocks(query, experts, lang, miniappMatch);
 
     await respond({
       response_type: "ephemeral",

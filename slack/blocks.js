@@ -12,7 +12,26 @@ function confidenceEmoji(confidence) {
   return CONFIDENCE_EMOJI[(confidence || "").toLowerCase()] || "🟡";
 }
 
-function buildResultBlocks(query, experts, lang = "es") {
+function buildMiniappBlock(miniappMatch, lang) {
+  const { miniapp, squad, emName, pmName, type } = miniappMatch;
+  const lines = [`🧩 *¿Es sobre ${miniapp}?* _(${squad})_`];
+
+  if (type === "technical" && emName) {
+    lines.push(`• Para algo técnico → hablar con *${emName}* _(EM)_`);
+  } else if (type === "product" && pmName) {
+    lines.push(`• Para algo de producto → hablar con *${pmName}* _(PM)_`);
+  } else {
+    if (emName) lines.push(`• Algo técnico → *${emName}* _(Engineering Manager)_`);
+    if (pmName) lines.push(`• Algo de producto → *${pmName}* _(Product Manager)_`);
+  }
+
+  return {
+    type: "section",
+    text: { type: "mrkdwn", text: lines.join("\n") },
+  };
+}
+
+function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   const successCount = getSuccessCount(query);
 
   const blocks = [
@@ -69,6 +88,11 @@ function buildResultBlocks(query, experts, lang = "es") {
         }),
       },
     });
+  }
+
+  if (miniappMatch) {
+    blocks.push({ type: "divider" });
+    blocks.push(buildMiniappBlock(miniappMatch, lang));
   }
 
   return blocks;
