@@ -64,35 +64,36 @@ Tasks:
    - Prefer channels where the topic was actually discussed in the messages above.
    - If none found, interpret the channel names list and suggest any whose name implies relevance to the topic.
 
-Return ONLY valid JSON:
+Return ONLY valid JSON with exactly this structure (no extra text):
 {
-  "lang": "<ISO 639-1 code of the query language>",
+  "lang": "<ISO 639-1 code>",
   "experts": [
     {
       "userId": "<slack user id>",
       "score": <integer 1-10>,
-      "confidence": "<in query language: e.g. 'Coincidencia fuerte' / 'Strong match' / 'Forte'>",
-      "explanation": "<one sentence in query language: why relevant>",
-      "briefMessage": "<2 sentences in query language, personalized, referencing what they said>",
-      "exampleText": "<most relevant snippet from their messages, max 120 chars>"
+      "confidence": "<e.g. 'Coincidencia fuerte'>",
+      "explanation": "<one sentence: why relevant>",
+      "briefMessage": "<2 sentences, personalized>",
+      "exampleText": "<snippet max 120 chars>"
     }
   ],
   "suggestedChannels": ["<channel-name>"],
-  "miniappMatch": {
-    "miniapp": "<matched miniapp name>",
-    "squad": "<squad name>",
-    "emName": "<EM full name>",
-    "pmName": "<PM full name>",
-    "type": "<'technical' | 'product' | 'both'>"
-  }
+  "miniappMatchFound": <true or false>,
+  "miniappName": "<matched miniapp name or null>",
+  "miniappSquad": "<squad name or null>",
+  "miniappEM": "<EM full name or null>",
+  "miniappPM": "<PM full name or null>",
+  "miniappType": "<'technical' or 'product' or 'both' or null>"
 }
 
-If no relevant experts found, return experts as [].
-Include "miniappMatch" only if the query is clearly about a specific miniapp.${miniappSection}${negativeSection}${suggestedSection}`;
+Rules:
+- If no relevant experts found, set experts to [].
+- If the query is about a specific miniapp from the list, set miniappMatchFound to true and fill the miniapp fields.
+- If NOT about a miniapp, set miniappMatchFound to false and all miniapp fields to null.${miniappSection}${negativeSection}${suggestedSection}`;
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 1000,
+    max_tokens: 1500,
     messages: [{ role: "user", content: prompt }],
   });
 
@@ -102,11 +103,21 @@ Include "miniappMatch" only if the query is clearly about a specific miniapp.${m
   if (!jsonMatch) return { lang: hintLang, experts: [], suggestedChannels: [] };
 
   const result = JSON.parse(jsonMatch[0]);
+  const miniappMatch = result.miniappMatchFound
+    ? {
+        miniapp: result.miniappName,
+        squad: result.miniappSquad,
+        emName: result.miniappEM,
+        pmName: result.miniappPM,
+        type: result.miniappType || "both",
+      }
+    : null;
+
   return {
     lang: result.lang || hintLang,
     experts: result.experts || [],
     suggestedChannels: result.suggestedChannels || [],
-    miniappMatch: result.miniappMatch || null,
+    miniappMatch,
   };
 }
 
