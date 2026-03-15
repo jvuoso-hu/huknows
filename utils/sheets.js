@@ -1,5 +1,7 @@
 const { google } = require("googleapis");
 
+const normalize = (s) => (s || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 const teamProfilesCache = { data: null, ts: 0 };
 const miniappOwnersCache = { data: null, ts: 0 };
 const TEAM_CACHE_TTL = 5 * 60 * 1000;
@@ -67,7 +69,7 @@ async function getTeamProfiles() {
     // Expected columns: Name | Role | Area (row 0 = headers)
     for (let i = 1; i < rows.length; i++) {
       const [name, role, area] = rows[i];
-      if (name) map.set(name.toLowerCase().trim(), { role: role || "", area: area || "" });
+      if (name) map.set(normalize(name), { role: role || "", area: area || "" });
     }
     teamProfilesCache.data = map;
     teamProfilesCache.ts = Date.now();

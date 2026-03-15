@@ -6,6 +6,8 @@ const { getTeamProfiles, getMiniappOwners } = require("../utils/sheets");
 const MAX_CANDIDATES = 200;
 const MAX_THREADS = 30;
 
+const normalize = (s) => (s || "").toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 async function getUserDirectory(client) {
   const cacheKey = "user_directory";
   const cached = cache.get(cacheKey);
@@ -18,7 +20,7 @@ async function getUserDirectory(client) {
     for (const user of result.members || []) {
       if (user.deleted || user.is_bot) continue;
       const name = user.real_name || user.name;
-      if (name) directory.set(name.toLowerCase().trim(), user.id);
+      if (name) directory.set(normalize(name), user.id);
     }
     cursor = result.response_metadata?.next_cursor;
   } while (cursor);
@@ -163,7 +165,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
   // Merge Slack titles with Sheet2 role/area, matched by real name (case-insensitive)
   const userTitles = { ...slackTitles };
   for (const [userId, name] of Object.entries(realNames)) {
-    const profile = teamProfiles.get(name.toLowerCase().trim());
+    const profile = teamProfiles.get(normalize(name));
     if (profile) {
       const parts = [profile.role, profile.area].filter(Boolean).join(" / ");
       userTitles[userId] = parts + (slackTitles[userId] ? ` · ${slackTitles[userId]}` : "");
@@ -204,8 +206,8 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
   const resolvedMiniappMatch = miniappMatch
     ? {
         ...miniappMatch,
-        emUserId: miniappMatch.emName ? (userDirectory.get(miniappMatch.emName.toLowerCase().trim()) || null) : null,
-        pmUserId: miniappMatch.pmName ? (userDirectory.get(miniappMatch.pmName.toLowerCase().trim()) || null) : null,
+        emUserId: miniappMatch.emName ? (userDirectory.get(normalize(miniappMatch.emName)) || null) : null,
+        pmUserId: miniappMatch.pmName ? (userDirectory.get(normalize(miniappMatch.pmName)) || null) : null,
       }
     : null;
 
