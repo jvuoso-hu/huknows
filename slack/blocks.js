@@ -19,9 +19,15 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
   const showEM = emName && (type === "technical" || type === "both");
   const showPM = pmName && (type === "product" || type === "both");
 
-  const lines = [t(lang, "miniappTitle", miniapp, squad)];
-  if (showEM) lines.push(t(lang, "miniappTechnical", emName));
-  if (showPM) lines.push(t(lang, "miniappProduct", pmName));
+  const emMention = emUserId ? `<@${emUserId}>` : `*${emName}*`;
+  const pmMention = pmUserId ? `<@${pmUserId}>` : `*${pmName}*`;
+
+  const lines = [
+    t(lang, "miniappShortcutTitle"),
+    t(lang, "miniappRelatedTo", miniapp, squad),
+  ];
+  if (showEM) lines.push(t(lang, "miniappTechnical", emMention));
+  if (showPM) lines.push(t(lang, "miniappProduct", pmMention));
 
   const blocks = [
     { type: "section", text: { type: "mrkdwn", text: lines.join("\n") } },
