@@ -173,31 +173,35 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es", miniappMatc
   return blocks;
 }
 
-function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es", wasRecommended = false) {
+function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es", wasRecommended = false, requesterUserId = null) {
   const lines = [
     t(lang, "briefGreeting", expertName),
     ``,
-    t(lang, "briefIdentified"),
-    ``,
-    t(lang, "briefTopic", query),
+    t(lang, "briefIdentified", query),
   ];
 
-  if (example?.isPrivate) {
-    lines.push(t(lang, "briefWhyPrivate"));
-  } else if (briefMessage) {
-    lines.push(`💬 ${briefMessage}`);
-  } else if (explanation) {
-    lines.push(t(lang, "briefWhy", explanation));
-  } else if (example?.channelName) {
-    const reason = channelCount > 1
-      ? t(lang, "briefWhy", `${channelCount} channels incl. *#${example.channelName}*`)
-      : t(lang, "briefWhy", `*#${example.channelName}*`);
-    lines.push(reason);
+  const reason = briefMessage || explanation;
+  const channel = example?.channelName;
+  const isPrivate = example?.isPrivate;
+
+  if (isPrivate) {
+    lines.push(``, reason ? t(lang, "briefWhyPrivate", reason) : t(lang, "briefWhyPrivateGeneric"));
+  } else if (reason && channel) {
+    lines.push(``, t(lang, "briefWhyChannel", reason, channel));
+  } else if (reason) {
+    lines.push(``, t(lang, "briefWhy", reason));
+  } else if (channel) {
+    lines.push(``, t(lang, "briefWhyGeneric", channel));
   }
 
   if (wasRecommended) {
     lines.push(``, t(lang, "briefWasRecommended"));
   }
+
+  if (requesterUserId) {
+    lines.push(``, t(lang, "briefCTA", requesterUserId));
+  }
+
   lines.push(``, t(lang, "briefFooter"));
   return lines.join("\n");
 }
