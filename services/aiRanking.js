@@ -51,6 +51,7 @@ Tasks:
    Do NOT rank people who just mention the topic in passing.
 
 2. For each expert, write a personalized "briefMessage" (2 sentences max) explaining why they were selected.
+   IMPORTANT: Write in second person, addressing the expert directly. Use "vos/tú/you", never "él/ella/he/she/their".
    If their role/title is relevant, mention it naturally and wrap the role/title in Slack bold (*role*). Example: "Como *Head of Finance*, tus mensajes sobre payroll muestran..."
    If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise without specifics.
 

@@ -84,13 +84,13 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   const isSingle = experts.length === 1;
 
   const headerText = isSingle
-    ? t(lang, "singleExpertHeader")
-    : t(lang, "topExpertsHeader");
+    ? t(lang, "singleExpertHeader", query)
+    : t(lang, "topExpertsHeader", query);
 
   const blocks = [
     {
       type: "section",
-      text: { type: "mrkdwn", text: `*${headerText}*` },
+      text: { type: "mrkdwn", text: headerText },
     },
   ];
 
@@ -112,7 +112,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
       : `${dnd.emoji} ${dnd.label}`;
 
     let text = `${nameLabel}  ${statusLabel}`;
-    text += `\n${confidenceEmoji(confidence)} ${confidence}  ${t(lang, "topicLabel", query)}`;
+    text += `\n${confidenceEmoji(confidence)} ${confidence}`;
 
     const channelName = example?.channelName;
     if (channelName) {
