@@ -1,7 +1,26 @@
 const Anthropic = require("@anthropic-ai/sdk");
-const { getTopQueries, getTopExperts, getRecentSearches } = require("../utils/feedback");
+const { getTopQueries, getTopExperts, getRecentSearches, getRecentConnections, getTotalSuccesses } = require("../utils/feedback");
 
 const anthropic = new Anthropic();
+
+const MEDALS = ["🥇", "🥈", "🥉"];
+
+function heroLevel(count) {
+  if (count >= 10) return 4;
+  if (count >= 5)  return 3;
+  if (count >= 3)  return 2;
+  return 1;
+}
+
+function timeAgo(ts, lang) {
+  const diff = Date.now() - ts;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1)  return lang === "en" ? "just now" : "ahora";
+  if (mins < 60) return lang === "en" ? `${mins}m ago` : `hace ${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24)  return lang === "en" ? `${hrs}h ago` : `hace ${hrs}h`;
+  return lang === "en" ? `${Math.floor(hrs / 24)}d ago` : `hace ${Math.floor(hrs / 24)}d`;
+}
 
 async function groupTopQueries(queries) {
   if (queries.length <= 1) return queries.map((q) => ({ topic: q.query, count: q.count }));
@@ -21,89 +40,6 @@ async function groupTopQueries(queries) {
   return queries.map((q) => ({ topic: q.query, count: q.count }));
 }
 
-async function buildHomeView(client, userId) {
-  const topQueries = getTopQueries(5);
-  const topExperts = getTopExperts(3);
-  const recentSearches = getRecentSearches(userId);
-
-  const blocks = [
-    {
-      type: "header",
-      text: { type: "plain_text", text: "🔍 HuKnows - The AI that knows who knows in Hu." },
-    },
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: "Usá `/huknows <tema>` para encontrar al experto indicado en tu equipo.",
-      },
-    },
-    { type: "divider" },
-  ];
-
-  // Recent searches for this user
-  if (recentSearches.length > 0) {
-    blocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*🕐 Tus últimas búsquedas*\n${recentSearches
-          .map((s) => `• _${s.query}_ · ${timeAgo(s.ts)}`)
-          .join("\n")}`,
-      },
-    });
-    blocks.push({ type: "divider" });
-  }
-
-  // Top queries across workspace — semantically grouped
-  if (topQueries.length > 0) {
-    const grouped = await groupTopQueries(topQueries);
-    blocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*🔥 Temas más buscados*\n${grouped
-          .map((q) => `• _${q.topic}_ · ${q.count} ${q.count === 1 ? "búsqueda" : "búsquedas"}`)
-          .join("\n")}`,
-      },
-    });
-    blocks.push({ type: "divider" });
-  }
-
-  // Top experts by helpful feedback
-  if (topExperts.length > 0) {
-    const enriched = await enrichTopExperts(client, topExperts);
-    blocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `*🏆 Expertos más útiles*\n${enriched
-          .map((e) => `• *${e.name}* · ${e.count} ${e.count === 1 ? "conexión exitosa" : "conexiones exitosas"}`)
-          .join("\n")}`,
-      },
-    });
-    blocks.push({ type: "divider" });
-  }
-
-  // Empty state
-  if (topQueries.length === 0 && recentSearches.length === 0) {
-    blocks.push({
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: "Todavía no hay búsquedas registradas. ¡Sé el primero en usar `/huknows`!",
-      },
-    });
-  }
-
-  blocks.push({
-    type: "context",
-    elements: [{ type: "mrkdwn", text: "_Los datos se acumulan desde que el bot está activo._" }],
-  });
-
-  return { type: "home", blocks };
-}
-
 async function enrichTopExperts(client, experts) {
   return Promise.all(
     experts.map(async (e) => {
@@ -118,14 +54,156 @@ async function enrichTopExperts(client, experts) {
   );
 }
 
-function timeAgo(ts) {
-  const diff = Date.now() - ts;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "ahora";
-  if (mins < 60) return `hace ${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `hace ${hrs}h`;
-  return `hace ${Math.floor(hrs / 24)}d`;
+async function buildHomeView(client, userId) {
+  // Detect user language from Slack locale
+  let lang = "es";
+  try {
+    const info = await client.users.info({ user: userId });
+    if ((info.user?.locale || "").startsWith("en")) lang = "en";
+  } catch {}
+
+  const isEn = lang === "en";
+  const topQueries = getTopQueries(5);
+  const topExperts = getTopExperts(3);
+  const recentSearches = getRecentSearches(userId);
+  const recentConnections = getRecentConnections(5);
+  const totalSolved = getTotalSuccesses();
+
+  const blocks = [
+    {
+      type: "header",
+      text: { type: "plain_text", text: "🔍 HuKnows - The AI that knows who knows in Hu." },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? "Use `/huknows <topic>` to find the right expert in your team."
+          : "Usá `/huknows <tema>` para encontrar al experto indicado en tu equipo.",
+      },
+    },
+    { type: "divider" },
+  ];
+
+  // ⏱ Recent searches
+  if (recentSearches.length > 0) {
+    const lines = recentSearches.map((s) => `- _${s.query}_ · ${timeAgo(s.ts, lang)}`).join("\n");
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? `*⏱ Your recent searches*\nYour latest knowledge quests:\n\n${lines}`
+          : `*⏱ Tus búsquedas recientes*\nTus últimas exploraciones de conocimiento:\n\n${lines}`,
+      },
+    });
+    blocks.push({ type: "divider" });
+  }
+
+  // 🔥 Trending topics
+  if (topQueries.length > 0) {
+    const grouped = await groupTopQueries(topQueries);
+    const searchWord = isEn ? "search" : "búsqueda";
+    const searchWordPlural = isEn ? "searches" : "búsquedas";
+    const lines = grouped
+      .map((q) => `• _${q.topic}_ · ${q.count} ${q.count === 1 ? searchWord : searchWordPlural}`)
+      .join("\n");
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? `*🔥 Trending topics in Hu*\nWhat people are looking for right now:\n\n${lines}`
+          : `*🔥 Trending topics en Hu*\nLo que la gente está buscando ahora:\n\n${lines}`,
+      },
+    });
+    blocks.push({ type: "divider" });
+  }
+
+  // 🧠 Knowledge unlocked
+  if (recentConnections.length > 0) {
+    const lines = recentConnections
+      .map((c) => {
+        const expert = c.expertName ? `*${c.expertName}*` : "_unknown_";
+        return isEn
+          ? `- _${c.query}_ → connected with ${expert}`
+          : `- _${c.query}_ → conectado con ${expert}`;
+      })
+      .join("\n");
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? `🧠 *Knowledge unlocked*\nConnections that recently helped solve topics across Hu:\n\n${lines}`
+          : `🧠 *Conocimiento desbloqueado*\nLas conexiones que ayudaron a resolver temas recientemente:\n\n${lines}`,
+      },
+    });
+    blocks.push({ type: "divider" });
+  }
+
+  // 🏆 Top knowledge heroes
+  if (topExperts.length > 0) {
+    const enriched = await enrichTopExperts(client, topExperts);
+    const lines = enriched
+      .map((e, i) => {
+        const medal = MEDALS[i] || "🏅";
+        const level = heroLevel(e.count);
+        return `${medal} ${e.name} · Hero Level ${level}`;
+      })
+      .join("\n");
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? `*🏆 Top knowledge heroes*\nThe experts helping Hu move faster:\n\n${lines}`
+          : `*🏆 Expertos destacados*\nLas personas que están brindando más ayuda:\n\n${lines}`,
+      },
+    });
+    blocks.push({ type: "divider" });
+  }
+
+  // Empty state
+  if (topQueries.length === 0 && recentSearches.length === 0) {
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? "No searches recorded yet. Be the first to use `/huknows`!"
+          : "Todavía no hay búsquedas registradas. ¡Sé el primero en usar `/huknows`!",
+      },
+    });
+  }
+
+  // ⚡ Total solved
+  if (totalSolved > 0) {
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: isEn
+          ? `⚡ *Problems solved with HuKnows: ${totalSolved}*`
+          : `⚡ *Dudas resueltas con HuKnows: ${totalSolved}*`,
+      },
+    });
+    blocks.push({ type: "divider" });
+  }
+
+  // Footer
+  blocks.push({
+    type: "context",
+    elements: [{
+      type: "mrkdwn",
+      text: isEn
+        ? "_HuKnows keeps learning from every connection to make knowledge flow faster across Hu._"
+        : "_HuKnows aprende con cada conexión para que el conocimiento fluya cada vez más rápido dentro de Hu._",
+    }],
+  });
+
+  return { type: "home", blocks };
 }
 
 module.exports = { buildHomeView };

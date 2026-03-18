@@ -4,14 +4,18 @@ const expertHelpCounts = new Map();  // expertUserId -> count
 const userSearches = new Map();      // userId -> [{ query, ts }]
 const negativeExperts = new Map();   // `${query}:${userId}` -> count
 const suggestedExperts = new Map();  // `${query}:${userId}` -> count
+const recentConnections = [];        // [{ query, expertUserId, expertName, ts }]
 
 const MAX_RECENT = 5;
+const MAX_CONNECTIONS = 10;
 
-function recordSuccess(query, expertUserId) {
+function recordSuccess(query, expertUserId, expertName = null) {
   const key = query.toLowerCase().trim();
   queryCounts.set(key, (queryCounts.get(key) || 0) + 1);
   if (expertUserId) {
     expertHelpCounts.set(expertUserId, (expertHelpCounts.get(expertUserId) || 0) + 1);
+    recentConnections.unshift({ query, expertUserId, expertName, ts: Date.now() });
+    if (recentConnections.length > MAX_CONNECTIONS) recentConnections.pop();
   }
 }
 
@@ -49,6 +53,14 @@ function getRecentSearches(userId) {
   return userSearches.get(userId) || [];
 }
 
+function getRecentConnections(limit = 5) {
+  return recentConnections.slice(0, limit);
+}
+
+function getTotalSuccesses() {
+  return [...expertHelpCounts.values()].reduce((a, b) => a + b, 0);
+}
+
 function recordNegativeFeedback(query, expertIds) {
   const base = query.toLowerCase().trim();
   for (const userId of expertIds) {
@@ -82,4 +94,5 @@ module.exports = {
   getNegativeExperts, getSuggestedExperts,
   getSuccessCount, getExpertHelpCount,
   getTopQueries, getTopExperts, getRecentSearches,
+  getRecentConnections, getTotalSuccesses,
 };

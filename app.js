@@ -210,7 +210,7 @@ app.action("feedback_helpful", async ({ ack, respond, action }) => {
     expertName,
     lang = "es",
   } = JSON.parse(action.value);
-  recordSuccess(query, expertUserId);
+  recordSuccess(query, expertUserId, expertName);
   syncExpertPoints(expertUserId, expertName, query); // fire-and-forget
 
   await respond({
