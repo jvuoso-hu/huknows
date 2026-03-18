@@ -205,17 +205,34 @@ async function buildHomeView(client, userId) {
   });
 
   // Export to Notion — fire and forget, non-critical
-  exportHomeToNotion({
-    recentSearches: recentSearches.map((s) => ({ query: s.query, timeAgo: timeAgo(s.ts, lang) })),
-    trendingTopics: grouped,
-    recentConnections,
-    topExperts: enriched.map((e) => ({ name: e.name, level: heroLevel(e.count) })),
-    totalSolved,
-    lang,
-    updatedAt: new Date().toLocaleString(lang === "en" ? "en-US" : "es-AR", { timeZone: "America/Argentina/Buenos_Aires" }),
-  }).catch((e) => console.error("[notion] Export failed:", e.message));
+  triggerNotionExport(client, lang, { grouped, enriched, recentSearches, recentConnections, totalSolved });
 
   return { type: "home", blocks };
 }
 
-module.exports = { buildHomeView };
+async function triggerNotionExport(client, lang = "es", cached = {}) {
+  try {
+    const recentSearches = cached.recentSearches || [];
+    const recentConnections = cached.recentConnections || getRecentConnections(5);
+    const totalSolved = cached.totalSolved ?? getTotalSuccesses();
+
+    const [grouped, enriched] = await Promise.all([
+      cached.grouped || (getTopQueries(5).length > 0 ? groupTopQueries(getTopQueries(5)) : Promise.resolve([])),
+      cached.enriched || (getTopExperts(3).length > 0 ? enrichTopExperts(client, getTopExperts(3)) : Promise.resolve([])),
+    ]);
+
+    await exportHomeToNotion({
+      recentSearches: recentSearches.map((s) => ({ query: s.query, timeAgo: timeAgo(s.ts, lang) })),
+      trendingTopics: grouped,
+      recentConnections,
+      topExperts: enriched.map((e) => ({ name: e.name, level: heroLevel(e.count) })),
+      totalSolved,
+      lang,
+      updatedAt: new Date().toLocaleString(lang === "en" ? "en-US" : "es-AR", { timeZone: "America/Argentina/Buenos_Aires" }),
+    });
+  } catch (e) {
+    console.error("[notion] Export failed:", e.message);
+  }
+}
+
+module.exports = { buildHomeView, triggerNotionExport };

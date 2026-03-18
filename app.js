@@ -11,7 +11,7 @@ const {
 const { t, detectLanguage } = require("./utils/language");
 const { recordSuccess, recordSearch, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
 const { syncExpertPoints } = require("./utils/sheets");
-const { buildHomeView } = require("./slack/home");
+const { buildHomeView, triggerNotionExport } = require("./slack/home");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -215,6 +215,7 @@ app.action("feedback_helpful", async ({ ack, respond, action }) => {
   } = JSON.parse(action.value);
   recordSuccess(query, expertUserId, expertName);
   syncExpertPoints(expertUserId, expertName, query); // fire-and-forget
+  triggerNotionExport(client, lang).catch(() => {}); // fire-and-forget
 
   await respond({
     replace_original: true,
