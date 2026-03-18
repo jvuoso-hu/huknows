@@ -50,9 +50,10 @@ Tasks:
    If a user's role/title is clearly unrelated, you may rank them lower even if they posted.
    Do NOT rank people who just mention the topic in passing.
 
-2. For each expert, write two personalized messages (2 sentences max each):
-   - "briefMessage": written in THIRD person, shown to the person searching. Example: "Lucas tiene amplia experiencia en payroll Chile, habiendo discutido el tema en múltiples canales."
-   - "briefMessageExpert": written in SECOND person, sent directly to the expert as a DM. Use "vos/tú/you". If their role/title is relevant, wrap it in Slack bold (*role*). Example: "Como *Head of Finance*, tus mensajes sobre payroll muestran que sos la persona indicada para este tema."
+2. For each expert, write two personalized messages (1 sentence each, concise):
+   - "briefMessage": THIRD person, shown to the person searching. Example: "Lucas tiene amplia experiencia en payroll Chile a través de múltiples conversaciones."
+   - "briefMessageExpert": SECOND person, sent as a DM to the expert. Use "vos/tú/you". If their role/title is relevant, wrap it in Slack bold (*role*). Example: "Como *Head of Finance*, tus mensajes sobre payroll te destacan como la persona indicada."
+   NEVER include raw Slack user IDs (e.g. U12345ABC) in any message — use role, channel, or topic references instead.
    If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise without specifics.
 
 3. If miniapp ownership data is provided and the query seems to be about one of those miniapps (exact or similar name/topic), include a "miniappMatch" field:
@@ -74,8 +75,8 @@ Return ONLY valid JSON with exactly this structure (no extra text):
       "score": <integer 1-10>,
       "confidence": "<one of: 'Coincidencia perfecta' | 'Coincidencia alta' | 'Buen match' | 'Coincidencia posible' | 'Posible ayuda' — or English equivalents: 'Perfect match' | 'Strong match' | 'Good match' | 'Potential match' | 'Low match, suggested connection'>",
       "explanation": "<one sentence: why relevant>",
-      "briefMessage": "<2 sentences, third person, for the requester>",
-      "briefMessageExpert": "<2 sentences, second person (vos/you), for the expert DM>",
+      "briefMessage": "<1 sentence, third person, for the requester>",
+      "briefMessageExpert": "<1 sentence, second person (vos/you), for the expert DM>",
       "exampleText": "<snippet max 120 chars>"
     }
   ],
