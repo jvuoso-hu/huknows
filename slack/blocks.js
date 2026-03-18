@@ -124,7 +124,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
       : `${dnd.emoji} ${dnd.label}`;
 
     let text = `${nameLabel}  ${statusLabel}`;
-    text += `\n${confidenceEmoji(confidence)} ${confidence}`;
+    text += `\n${confidenceEmoji(confidence)} *${confidence}*`;
 
     const channelName = example?.channelName;
     if (channelName) {
