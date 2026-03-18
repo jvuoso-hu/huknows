@@ -241,6 +241,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
         confidence: expert.confidence,
         explanation: expert.explanation,
         briefMessage: expert.briefMessage || null,
+        briefMessageExpert: expert.briefMessageExpert || null,
         wasRecommended: suggestedSet.has(expert.userId),
         hasPrivateSource,
         lowActivity: !!lowActivity,

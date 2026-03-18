@@ -104,7 +104,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   blocks.push({ type: "divider" });
 
   for (let i = 0; i < experts.length; i++) {
-    const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount, wasRecommended, lowActivity } = experts[i];
+    const { userId, name, confidence, explanation, briefMessage, briefMessageExpert, dnd, example, channelCount, wasRecommended, lowActivity } = experts[i];
 
     const nameLabel = (isSingle && !lowActivity) ? `<@${userId}>` : `*${i + 1 > 1 || !isSingle ? `${i + 1}. ` : ""}${name}*`;
     const statusLabel = lowActivity
@@ -148,6 +148,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
         value: JSON.stringify({
           userId, query, example: example || null, channelCount,
           explanation: explanation || null, briefMessage: briefMessage || null,
+          briefMessageExpert: briefMessageExpert || null,
           wasRecommended: wasRecommended || false, lang,
         }),
       },
