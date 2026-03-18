@@ -195,6 +195,11 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es", miniappMatc
   return blocks;
 }
 
+const SLACK_ID_PATTERN = /\bU[A-Z0-9]{6,12}\b/g;
+function sanitize(text) {
+  return text ? text.replace(SLACK_ID_PATTERN, "") : text;
+}
+
 function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es", wasRecommended = false, requesterUserId = null) {
   const lines = [
     t(lang, "briefGreeting", expertName),
@@ -202,7 +207,7 @@ function buildBrief(query, expertName, explanation, example, channelCount, brief
     t(lang, "briefIdentified", query),
   ];
 
-  const reason = briefMessage || explanation;
+  const reason = sanitize(briefMessage || explanation);
   const channel = example?.channelName;
   const isPrivate = example?.isPrivate;
 

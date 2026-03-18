@@ -88,7 +88,10 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
     const requesterUserId = body.user.id;
 
     const [expertName, opened] = await Promise.all([
-      client.users.info({ user: expertUserId }).then((r) => r.user?.real_name || r.user?.name || expertUserId),
+      client.users.info({ user: expertUserId }).then((r) => {
+        const u = r.user;
+        return u?.real_name || u?.profile?.display_name || u?.name || "this expert";
+      }),
       client.conversations.open({ users: `${requesterUserId},${expertUserId}` }),
     ]);
     const channelId = opened.channel.id;
