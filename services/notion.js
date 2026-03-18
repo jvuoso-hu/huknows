@@ -3,10 +3,7 @@ const { Client } = require("@notionhq/client");
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 const PAGE_ID = (process.env.NOTION_PAGE_ID || "").replace(/^.*-([a-f0-9]{32})$/, "$1") || process.env.NOTION_PAGE_ID;
 
-// In-memory cache for the DB ID — persists for the lifetime of the process
-let _dbId = process.env.NOTION_DATABASE_ID || null;
-
-// ─── Block helpers ───────────────────────────────────────────────────────────
+// ─── Block helpers ─────────────────────────────────────────────────────────────
 
 function rich(text, options = {}) {
   const t = { type: "text", text: { content: String(text) } };
@@ -15,77 +12,35 @@ function rich(text, options = {}) {
   return t;
 }
 
-const heading2   = (text)  => ({ object: "block", type: "heading_2",  heading_2:  { rich_text: [rich(text)] } });
-const bullet     = (parts) => ({ object: "block", type: "bulleted_list_item", bulleted_list_item: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
-const numbered   = (parts) => ({ object: "block", type: "numbered_list_item", numbered_list_item: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
-const divider    = ()      => ({ object: "block", type: "divider", divider: {} });
-const paragraph  = (parts) => ({ object: "block", type: "paragraph", paragraph: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
-const callout    = (text, emoji = "⚡") => ({ object: "block", type: "callout", callout: { rich_text: [rich(text)], icon: { type: "emoji", emoji } } });
+const heading2  = (text)  => ({ object: "block", type: "heading_2",  heading_2:  { rich_text: [rich(text)] } });
+const bullet    = (parts) => ({ object: "block", type: "bulleted_list_item", bulleted_list_item: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
+const numbered  = (parts) => ({ object: "block", type: "numbered_list_item", numbered_list_item: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
+const divider   = ()      => ({ object: "block", type: "divider", divider: {} });
+const paragraph = (parts) => ({ object: "block", type: "paragraph", paragraph: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
+const callout   = (text, emoji = "⚡") => ({ object: "block", type: "callout", callout: { rich_text: [rich(text)], icon: { type: "emoji", emoji } } });
 
-// ─── Database ─────────────────────────────────────────────────────────────────
-
-async function getOrCreateDatabase() {
-  if (_dbId) return _dbId;
-  if (!PAGE_ID) return null;
-
-  // Try to find an existing HuKnows DB in the page
-  const children = await notion.blocks.children.list({ block_id: PAGE_ID, page_size: 50 });
-  const existing = children.results.find((b) => b.type === "child_database");
-  if (existing) {
-    _dbId = existing.id;
-    console.log(`[notion] Found existing database: ${_dbId}`);
-    return _dbId;
-  }
-
-  // Create a new database inside the page
-  const db = await notion.databases.create({
-    parent: { type: "page_id", page_id: PAGE_ID },
-    title: [{ type: "text", text: { content: "🤝 HuKnows — Connections Log" } }],
-    properties: {
-      "Query":                { title: {} },
-      "Expert":               { rich_text: {} },
-      "Date":                 { date: {} },
-      "Time to Connect (min)":{ number: { format: "number" } },
+function columns(...cols) {
+  return {
+    object: "block",
+    type: "column_list",
+    column_list: {
+      children: cols.map((blocks) => ({
+        object: "block",
+        type: "column",
+        column: { children: blocks },
+      })),
     },
-  });
-
-  _dbId = db.id;
-  console.log(`[notion] Created new database. Add to Railway env vars: NOTION_DATABASE_ID=${_dbId}`);
-  return _dbId;
+  };
 }
 
-async function logConnectionToDatabase(query, expertName, timeToConnectMs) {
-  if (!process.env.NOTION_API_KEY) return;
-  try {
-    const dbId = await getOrCreateDatabase();
-    if (!dbId) return;
-
-    const mins = timeToConnectMs ? Math.round(timeToConnectMs / 60000) : null;
-
-    await notion.pages.create({
-      parent: { database_id: dbId },
-      properties: {
-        "Query":   { title:      [{ text: { content: query } }] },
-        "Expert":  { rich_text:  [{ text: { content: expertName || "—" } }] },
-        "Date":    { date:       { start: new Date().toISOString() } },
-        ...(mins !== null && { "Time to Connect (min)": { number: mins } }),
-      },
-    });
-    console.log(`[notion] Logged connection: ${query} → ${expertName}`);
-  } catch (e) {
-    console.error("[notion] logConnection failed:", e.message);
-  }
-}
-
-// ─── Summary page ────────────────────────────────────────────────────────────
+// ─── Page management ──────────────────────────────────────────────────────────
 
 async function clearPage() {
   let cursor;
   const ids = [];
   do {
     const res = await notion.blocks.children.list({ block_id: PAGE_ID, start_cursor: cursor, page_size: 100 });
-    // Don't delete the child_database block — preserve the DB
-    ids.push(...res.results.filter((b) => b.type !== "child_database").map((b) => b.id));
+    ids.push(...res.results.map((b) => b.id));
     cursor = res.has_more ? res.next_cursor : null;
   } while (cursor);
   await Promise.all(ids.map((id) => notion.blocks.delete({ block_id: id })));
@@ -96,6 +51,8 @@ async function appendBlocks(blocks) {
     await notion.blocks.children.append({ block_id: PAGE_ID, children: blocks.slice(i, i + 100) });
   }
 }
+
+// ─── Export ───────────────────────────────────────────────────────────────────
 
 async function exportHomeToNotion({ trendingTopics, recentConnections, topExperts, totalSolved, avgTimeToConnect, uniqueResolvedTopics, lang, updatedAt }) {
   if (!PAGE_ID || !process.env.NOTION_API_KEY) {
@@ -108,43 +65,50 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   const noData = isEn ? "No data yet" : "Sin datos aún";
   const blocks = [];
 
-  // Ensure DB exists (creates it if needed)
-  await getOrCreateDatabase();
-
+  // Header
   blocks.push(callout(isEn ? `Last updated: ${updatedAt}` : `Última actualización: ${updatedAt}`, "🔄"));
   blocks.push(divider());
 
-  // 📊 Metrics
-  blocks.push(callout(`${isEn ? "Connections created" : "Conexiones creadas"}: ${totalSolved}`, "🤝"));
-  blocks.push(callout(`${isEn ? "Avg time to connect" : "Tiempo promedio de conexión"}: ${avgTimeToConnect || noData}`, "⏱"));
-  blocks.push(callout(`${isEn ? "Unique topics resolved" : "Temas únicos resueltos"}: ${uniqueResolvedTopics}`, "🔁"));
+  // Metrics row (3 columns)
+  blocks.push(columns(
+    [callout(`${isEn ? "Connections created" : "Conexiones creadas"}: ${totalSolved}`, "🤝")],
+    [callout(`${isEn ? "Avg time to connect" : "Tiempo promedio de conexión"}: ${avgTimeToConnect || noData}`, "⏱")],
+    [callout(`${isEn ? "Unique topics resolved" : "Temas únicos resueltos"}: ${uniqueResolvedTopics}`, "🔁")],
+  ));
   blocks.push(divider());
 
-  // 🔥 Trending topics
+  // Content row (2 columns: trending | knowledge unlocked)
+  const leftCol = [];
+  const rightCol = [];
+
   if (trendingTopics.length > 0) {
-    blocks.push(heading2(isEn ? "🔥 Trending topics in Hu" : "🔥 Trending topics en Hu"));
     const word = isEn ? "search" : "búsqueda";
     const wordP = isEn ? "searches" : "búsquedas";
+    leftCol.push(heading2(isEn ? "🔥 Trending topics" : "🔥 Trending topics en Hu"));
     for (const t of trendingTopics) {
-      blocks.push(bullet([rich(t.topic, { bold: true }), rich(` · ${t.count} ${t.count === 1 ? word : wordP}`)]));
+      leftCol.push(bullet([rich(t.topic, { bold: true }), rich(` · ${t.count} ${t.count === 1 ? word : wordP}`)]));
     }
-    blocks.push(divider());
   }
 
-  // 🧠 Knowledge unlocked
   if (recentConnections.length > 0) {
-    blocks.push(heading2(isEn ? "🧠 Knowledge unlocked" : "🧠 Conocimiento desbloqueado"));
+    rightCol.push(heading2(isEn ? "🧠 Knowledge unlocked" : "🧠 Conocimiento desbloqueado"));
     for (const c of recentConnections) {
-      blocks.push(bullet([
+      rightCol.push(bullet([
         rich(c.query, { italic: true }),
-        rich(isEn ? " → connected with " : " → conectado con "),
+        rich(" → "),
         rich(c.expertName || "—", { bold: true }),
       ]));
     }
+  }
+
+  if (leftCol.length > 0 || rightCol.length > 0) {
+    if (leftCol.length === 0) leftCol.push(paragraph(noData));
+    if (rightCol.length === 0) rightCol.push(paragraph(noData));
+    blocks.push(columns(leftCol, rightCol));
     blocks.push(divider());
   }
 
-  // 🏆 Top experts
+  // Heroes (full width)
   if (topExperts.length > 0) {
     const MEDALS = ["🥇", "🥈", "🥉"];
     blocks.push(heading2(isEn ? "🏆 Top knowledge heroes" : "🏆 Expertos destacados"));
@@ -154,16 +118,18 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
     blocks.push(divider());
   }
 
-  // ⚡ Footer
+  // Footer
   blocks.push(callout(isEn ? `Problems solved with HuKnows: ${totalSolved}` : `Dudas resueltas con HuKnows: ${totalSolved}`, "⚡"));
-  blocks.push(paragraph([rich(isEn
-    ? "HuKnows keeps learning from every connection to make knowledge flow faster across Hu."
-    : "HuKnows aprende con cada conexión para que el conocimiento fluya cada vez más rápido dentro de Hu.",
+  blocks.push(paragraph([rich(
+    isEn
+      ? "HuKnows keeps learning from every connection to make knowledge flow faster across Hu."
+      : "HuKnows aprende con cada conexión para que el conocimiento fluya cada vez más rápido dentro de Hu.",
     { italic: true }
   )]));
 
   await clearPage();
   await appendBlocks(blocks);
+  console.log("[notion] Export complete.");
 }
 
-module.exports = { exportHomeToNotion, logConnectionToDatabase };
+module.exports = { exportHomeToNotion };

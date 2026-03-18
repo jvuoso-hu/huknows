@@ -10,9 +10,9 @@ const {
 } = require("./slack/blocks");
 const { t, detectLanguage } = require("./utils/language");
 const { recordSuccess, recordSearch, recordConnect, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
+
 const { syncExpertPoints } = require("./utils/sheets");
 const { buildHomeView, triggerNotionExport } = require("./slack/home");
-const { logConnectionToDatabase } = require("./services/notion");
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -67,7 +67,7 @@ app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
     });
   } catch (error) {
     logger.error("Error in /huknows:", error);
-    await respond({ response_type: "ephemeral", text: t("es", "error") });
+    await respond({ response_type: "ephemeral", replace_original: true, text: t("es", "error") });
   }
 });
 
@@ -119,7 +119,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
               text: { type: "plain_text", text: t(lang, "helpful") },
               style: "primary",
               action_id: "feedback_helpful",
-              value: JSON.stringify({ query, expertUserId, expertName, lang, timeToConnectMs: timeToConnectMs || null }),
+              value: JSON.stringify({ query, expertUserId, expertName, lang }),
             },
             {
               type: "button",
@@ -214,11 +214,9 @@ app.action("feedback_helpful", async ({ ack, respond, action, client }) => {
     expertUserId,
     expertName,
     lang = "es",
-    timeToConnectMs = null,
   } = JSON.parse(action.value);
   recordSuccess(query, expertUserId, expertName);
   syncExpertPoints(expertUserId, expertName, query); // fire-and-forget
-  logConnectionToDatabase(query, expertName, timeToConnectMs).catch(() => {}); // fire-and-forget
   triggerNotionExport(client, lang).catch(() => {}); // fire-and-forget
 
   await respond({
