@@ -9,8 +9,11 @@ function rich(text, options = {}) {
   const t = { type: "text", text: { content: String(text) } };
   if (options.bold)   t.annotations = { ...t.annotations, bold: true };
   if (options.italic) t.annotations = { ...t.annotations, italic: true };
+  if (options.color)  t.annotations = { ...t.annotations, color: options.color };
   return t;
 }
+
+const empty = () => paragraph([rich(" ")]);
 
 const heading2  = (text)  => ({ object: "block", type: "heading_2",  heading_2:  { rich_text: [rich(text)] } });
 const bullet    = (parts) => ({ object: "block", type: "bulleted_list_item", bulleted_list_item: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
@@ -71,7 +74,14 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   const blocks = [];
 
   // Header
-  blocks.push(callout(isEn ? `Last updated: ${updatedAt}` : `Última actualización: ${updatedAt}`, "🔄"));
+  blocks.push({
+    object: "block", type: "callout",
+    callout: {
+      rich_text: [rich(isEn ? `Last updated: ${updatedAt}` : `Última actualización: ${updatedAt}`, { italic: true, color: "gray" })],
+      icon: { type: "emoji", emoji: "🔄" },
+      color: "gray_background",
+    },
+  });
   blocks.push(divider());
 
   // Metrics row (3 columns)
@@ -129,13 +139,22 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   }
 
   // Footer
-  blocks.push(callout(isEn ? `Problems solved with HuKnows: ${totalSolved}` : `Dudas resueltas con HuKnows: ${totalSolved}`, "⚡"));
-  blocks.push(paragraph([rich(
-    isEn
-      ? "HuKnows keeps learning from every connection to make knowledge flow faster across Hu."
-      : "HuKnows aprende con cada conexión para que el conocimiento fluya cada vez más rápido dentro de Hu.",
-    { italic: true }
-  )]));
+  blocks.push(empty());
+  blocks.push(empty());
+  blocks.push({
+    object: "block", type: "callout",
+    callout: {
+      rich_text: [rich(isEn ? `Problems solved with HuKnows: ${totalSolved}` : `Dudas resueltas con HuKnows: ${totalSolved}`, { bold: true })],
+      icon: { type: "emoji", emoji: "⚡" },
+      color: "yellow_background",
+    },
+  });
+  blocks.push(paragraph([rich("HuKnows ® El conocimiento ya está. HuKnows se encarga de conectarlo. Make things happen.", { italic: true })]));
+
+  const FOOTER_IMAGE_URL = process.env.NOTION_FOOTER_IMAGE_URL;
+  if (FOOTER_IMAGE_URL) {
+    blocks.push({ object: "block", type: "image", image: { type: "external", external: { url: FOOTER_IMAGE_URL } } });
+  }
 
   await clearPage();
   await appendBlocks(blocks);
