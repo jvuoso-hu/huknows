@@ -17,7 +17,12 @@ const bullet    = (parts) => ({ object: "block", type: "bulleted_list_item", bul
 const numbered  = (parts) => ({ object: "block", type: "numbered_list_item", numbered_list_item: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
 const divider   = ()      => ({ object: "block", type: "divider", divider: {} });
 const paragraph = (parts) => ({ object: "block", type: "paragraph", paragraph: { rich_text: Array.isArray(parts) ? parts : [rich(parts)] } });
-const callout   = (text, emoji = "⚡") => ({ object: "block", type: "callout", callout: { rich_text: [rich(text)], icon: { type: "emoji", emoji } } });
+const callout      = (text, emoji = "⚡") => ({ object: "block", type: "callout", callout: { rich_text: [rich(text)], icon: { type: "emoji", emoji } } });
+const metricLabel  = (text) => paragraph([rich(text, { bold: true })]);
+const metricValue  = (value, emoji, color = "blue_background") => ({
+  object: "block", type: "callout",
+  callout: { rich_text: [rich(String(value), { bold: true })], icon: { type: "emoji", emoji }, color },
+});
 
 function columns(...cols) {
   return {
@@ -71,9 +76,18 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
 
   // Metrics row (3 columns)
   blocks.push(columns(
-    [callout(`${isEn ? "Connections created" : "Conexiones creadas"}: ${totalSolved}`, "🤝")],
-    [callout(`${isEn ? "Avg time to connect" : "Tiempo promedio de conexión"}: ${avgTimeToConnect || noData}`, "⏱")],
-    [callout(`${isEn ? "Unique topics resolved" : "Temas únicos resueltos"}: ${uniqueResolvedTopics}`, "🔁")],
+    [
+      metricLabel(isEn ? "Connections created:" : "Conexiones creadas:"),
+      metricValue(totalSolved, "🤝🏻", "blue_background"),
+    ],
+    [
+      metricLabel(isEn ? "Avg time to connect:" : "Tiempo promedio de conexión:"),
+      metricValue(avgTimeToConnect || noData, "⏱", "yellow_background"),
+    ],
+    [
+      metricLabel(isEn ? "Unique topics resolved:" : "Temas únicos resueltos:"),
+      metricValue(uniqueResolvedTopics, "🔁", "green_background"),
+    ],
   ));
   blocks.push(divider());
 
