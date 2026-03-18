@@ -1,5 +1,5 @@
 const Anthropic = require("@anthropic-ai/sdk");
-const { getTopQueries, getTopExperts, getRecentSearches, getRecentConnections, getTotalSuccesses } = require("../utils/feedback");
+const { getTopQueries, getTopExperts, getRecentSearches, getRecentConnections, getTotalSuccesses, getAvgTimeToConnect, getUniqueResolvedTopics } = require("../utils/feedback");
 const { exportHomeToNotion } = require("../services/notion");
 
 const anthropic = new Anthropic();
@@ -205,14 +205,13 @@ async function buildHomeView(client, userId) {
   });
 
   // Export to Notion — fire and forget, non-critical
-  triggerNotionExport(client, lang, { grouped, enriched, recentSearches, recentConnections, totalSolved });
+  triggerNotionExport(client, lang, { grouped, enriched, recentConnections, totalSolved });
 
   return { type: "home", blocks };
 }
 
 async function triggerNotionExport(client, lang = "es", cached = {}) {
   try {
-    const recentSearches = cached.recentSearches || [];
     const recentConnections = cached.recentConnections || getRecentConnections(5);
     const totalSolved = cached.totalSolved ?? getTotalSuccesses();
 
@@ -222,11 +221,12 @@ async function triggerNotionExport(client, lang = "es", cached = {}) {
     ]);
 
     await exportHomeToNotion({
-      recentSearches: recentSearches.map((s) => ({ query: s.query, timeAgo: timeAgo(s.ts, lang) })),
       trendingTopics: grouped,
       recentConnections,
       topExperts: enriched.map((e) => ({ name: e.name, level: heroLevel(e.count) })),
       totalSolved,
+      avgTimeToConnect: getAvgTimeToConnect(),
+      uniqueResolvedTopics: getUniqueResolvedTopics(),
       lang,
       updatedAt: new Date().toLocaleString(lang === "en" ? "en-US" : "es-AR", { timeZone: "America/Argentina/Buenos_Aires" }),
     });

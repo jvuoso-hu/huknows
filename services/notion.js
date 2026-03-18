@@ -64,7 +64,18 @@ async function appendBlocks(blocks) {
   }
 }
 
-async function exportHomeToNotion({ recentSearches, trendingTopics, recentConnections, topExperts, totalSolved, lang, updatedAt }) {
+function metricColumn(emoji, label, value, isEn) {
+  return {
+    object: "block",
+    type: "column",
+    column: {},
+    children: [
+      callout(`${emoji} ${value}\n${label}`, emoji),
+    ],
+  };
+}
+
+async function exportHomeToNotion({ trendingTopics, recentConnections, topExperts, totalSolved, avgTimeToConnect, uniqueResolvedTopics, lang, updatedAt }) {
   if (!PAGE_ID || !process.env.NOTION_API_KEY) {
     console.log("[notion] Skipping export — NOTION_API_KEY or NOTION_PAGE_ID not set");
     return;
@@ -76,21 +87,23 @@ async function exportHomeToNotion({ recentSearches, trendingTopics, recentConnec
 
   // Header
   blocks.push(callout(
-    isEn
-      ? `Last updated: ${updatedAt}`
-      : `Última actualización: ${updatedAt}`,
+    isEn ? `Last updated: ${updatedAt}` : `Última actualización: ${updatedAt}`,
     "🔄"
   ));
   blocks.push(divider());
 
-  // ⏱ Recent searches
-  if (recentSearches.length > 0) {
-    blocks.push(heading2(isEn ? "⏱ Your recent searches" : "⏱ Tus búsquedas recientes"));
-    for (const s of recentSearches) {
-      blocks.push(bullet([rich(s.query, { italic: true }), rich(` · ${s.timeAgo}`)]));
-    }
-    blocks.push(divider());
-  }
+  // 📊 Metrics dashboard — 3 columns
+  blocks.push({
+    object: "block",
+    type: "column_list",
+    column_list: {},
+    children: [
+      metricColumn("🤝", isEn ? "Connections created" : "Conexiones creadas", totalSolved, isEn),
+      metricColumn("⏱", isEn ? "Avg time to connect" : "Tiempo promedio de conexión", avgTimeToConnect || (isEn ? "No data yet" : "Sin datos aún"), isEn),
+      metricColumn("🔁", isEn ? "Unique topics resolved" : "Temas únicos resueltos", uniqueResolvedTopics, isEn),
+    ],
+  });
+  blocks.push(divider());
 
   // 🔥 Trending topics
   if (trendingTopics.length > 0) {

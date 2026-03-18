@@ -5,6 +5,8 @@ const userSearches = new Map();      // userId -> [{ query, ts }]
 const negativeExperts = new Map();   // `${query}:${userId}` -> count
 const suggestedExperts = new Map();  // `${query}:${userId}` -> count
 const recentConnections = [];        // [{ query, expertUserId, expertName, ts }]
+const connectionDurations = [];      // milliseconds from search to connect click
+const resolvedTopics = new Set();    // unique queries that got successful feedback
 
 const MAX_RECENT = 5;
 const MAX_CONNECTIONS = 10;
@@ -16,6 +18,16 @@ function recordSuccess(query, expertUserId, expertName = null) {
     expertHelpCounts.set(expertUserId, (expertHelpCounts.get(expertUserId) || 0) + 1);
     recentConnections.unshift({ query, expertUserId, expertName, ts: Date.now() });
     if (recentConnections.length > MAX_CONNECTIONS) recentConnections.pop();
+    resolvedTopics.add(key);
+  }
+}
+
+function recordConnect(userId, query) {
+  const searches = userSearches.get(userId) || [];
+  const key = query.toLowerCase().trim();
+  const match = searches.find((s) => s.query.toLowerCase().trim() === key);
+  if (match) {
+    connectionDurations.push(Date.now() - match.ts);
   }
 }
 
@@ -61,6 +73,17 @@ function getTotalSuccesses() {
   return [...expertHelpCounts.values()].reduce((a, b) => a + b, 0);
 }
 
+function getAvgTimeToConnect() {
+  if (!connectionDurations.length) return null;
+  const avg = connectionDurations.reduce((a, b) => a + b, 0) / connectionDurations.length;
+  const mins = Math.round(avg / 60000);
+  return mins < 1 ? "< 1 min" : `${mins} min`;
+}
+
+function getUniqueResolvedTopics() {
+  return resolvedTopics.size;
+}
+
 function recordNegativeFeedback(query, expertIds) {
   const base = query.toLowerCase().trim();
   for (const userId of expertIds) {
@@ -89,10 +112,11 @@ function getSuggestedExperts(query) {
 }
 
 module.exports = {
-  recordSuccess, recordSearch,
+  recordSuccess, recordSearch, recordConnect,
   recordNegativeFeedback, recordExpertSuggestion,
   getNegativeExperts, getSuggestedExperts,
   getSuccessCount, getExpertHelpCount,
   getTopQueries, getTopExperts, getRecentSearches,
   getRecentConnections, getTotalSuccesses,
+  getAvgTimeToConnect, getUniqueResolvedTopics,
 };

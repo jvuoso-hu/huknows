@@ -9,7 +9,7 @@ const {
   buildBrief,
 } = require("./slack/blocks");
 const { t, detectLanguage } = require("./utils/language");
-const { recordSuccess, recordSearch, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
+const { recordSuccess, recordSearch, recordConnect, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
 const { syncExpertPoints } = require("./utils/sheets");
 const { buildHomeView, triggerNotionExport } = require("./slack/home");
 
@@ -86,6 +86,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
       lang = "es",
     } = JSON.parse(action.value);
     const requesterUserId = body.user.id;
+    recordConnect(requesterUserId, query);
 
     const [expertName, opened] = await Promise.all([
       client.users.info({ user: expertUserId }).then((r) => {
