@@ -21,7 +21,7 @@ function detectLanguage(text) {
 
 const STRINGS = {
   es: {
-    iKnow: (q) => `🤓☝🏼 I know! Dejame encontrar los expertos en: _${q}_...`,
+    iKnow: (q) => `🤓☝🏻 Estoy analizando el conocimiento dentro de Hu para identificar a las personas que mejor pueden ayudarte con: _${q}_`,
     searching: (q) => `🔍 Buscando expertos en _${q}_...`,
     noExperts: (q) => `No encontré expertos para *${q}*.`,
     noQuery: "Usá el comando así: `/huknows <tema o problema>`",
@@ -32,7 +32,11 @@ const STRINGS = {
     away: "Ausente",
     dndUntil: (t) => `No molestar hasta ${t}`,
     dnd: "No molestar",
-    topExperts: (q) => `🏆 Top expertos: ${q}`,
+    topExperts: (q) => `🏆 Mejores coincidencias: ${q}`,
+    topExpertsHeader: "🏆 Mejores coincidencias para este tema",
+    singleExpertHeader: "I know! Te sugiero que hables con:",
+    activeIn: (channel) => `💬 Activo en #${channel}`,
+    topicLabel: (q) => `📌 Tema: ${q}`,
     helpful: "✅ Sí, fue de gran utilidad",
     unhelpful: "❌ No, no fue de utilidad",
     skipSuggestion: "No sé, gracias igual",
@@ -63,7 +67,7 @@ const STRINGS = {
     miniappPMBrief: (miniapp) => `Como *Product Manager* de *${miniapp}*, te contactamos porque la consulta parece estar relacionada con producto o experiencia.`,
   },
   en: {
-    iKnow: (q) => `🤓☝🏼 I know! Let me find the experts for: _${q}_...`,
+    iKnow: (q) => `🤓☝🏻 I'm analyzing knowledge across Hu to identify the people most likely to help with: _${q}_`,
     searching: (q) => `🔍 Searching for experts on _${q}_...`,
     noExperts: (q) => `No clear experts found for *${q}*.`,
     noQuery: "Usage: `/huknows <topic or problem>`",
@@ -74,7 +78,11 @@ const STRINGS = {
     away: "Away",
     dndUntil: (t) => `DND until ${t}`,
     dnd: "Do Not Disturb",
-    topExperts: (q) => `🏆 Top experts: ${q}`,
+    topExperts: (q) => `🏆 Best matches: ${q}`,
+    topExpertsHeader: "🏆 Best matches for this topic",
+    singleExpertHeader: "I know! I suggest you talk to:",
+    activeIn: (channel) => `💬 Active in #${channel}`,
+    topicLabel: (q) => `📌 Topic: ${q}`,
     helpful: "✅ Yes, very helpful",
     unhelpful: "❌ No, not helpful",
     skipSuggestion: "I don't know, thanks anyway",

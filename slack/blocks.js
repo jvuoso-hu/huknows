@@ -74,11 +74,16 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
 
 function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   const successCount = getSuccessCount(query);
+  const isSingle = experts.length === 1;
+
+  const headerText = isSingle
+    ? t(lang, "singleExpertHeader")
+    : t(lang, "topExpertsHeader");
 
   const blocks = [
     {
-      type: "header",
-      text: { type: "plain_text", text: t(lang, "topExperts", query) },
+      type: "section",
+      text: { type: "mrkdwn", text: `*${headerText}*` },
     },
   ];
 
@@ -94,24 +99,22 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   for (let i = 0; i < experts.length; i++) {
     const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount, wasRecommended } = experts[i];
 
-    const channelInfo =
-      channelCount > 1
-        ? `${channelCount} channels`
-        : example?.channelName
-        ? `#${example.channelName}`
-        : "";
+    const nameLabel = isSingle ? `<@${userId}>` : `*${i + 1}. ${name}*`;
+    let text = `${nameLabel}  ${dnd.emoji} ${dnd.label}`;
+    text += `\n${confidenceEmoji(confidence)} ${confidence}  ${t(lang, "topicLabel", query)}`;
 
-    let text = `*${i + 1}. ${name}*  ${dnd.emoji} ${dnd.label}`;
-    text += `\n${confidenceEmoji(confidence)} ${confidence}${channelInfo ? ` · ${channelInfo}` : ""}`;
-
-    if (explanation) {
-      text += `\n_${explanation}_`;
+    const channelName = example?.channelName;
+    if (channelName) {
+      text += `\n${example.isPrivate ? "🔒" : t(lang, "activeIn", channelName)}`;
     }
+
+    const description = briefMessage || explanation;
+    if (description) {
+      text += `\n\n${description}`;
+    }
+
     if (wasRecommended) {
       text += `\n${t(lang, "wasRecommended")}`;
-    }
-    if (example?.isPrivate) {
-      text += `  🔒`;
     }
 
     blocks.push({
