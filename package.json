@@ -23,7 +23,8 @@
     "@notionhq/client": "^5.13.0",
     "@slack/bolt": "^4.6.0",
     "dotenv": "^17.3.1",
-    "googleapis": "^171.4.0"
+    "googleapis": "^171.4.0",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.5",

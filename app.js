@@ -9,7 +9,7 @@ const {
   buildBrief,
 } = require("./slack/blocks");
 const { t, detectLanguage } = require("./utils/language");
-const { recordSuccess, recordSearch, recordConnect, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
+const { hydrate, recordSuccess, recordSearch, recordConnect, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
 
 const { syncExpertPoints } = require("./utils/sheets");
 const { buildHomeView, triggerNotionExport } = require("./slack/home");
@@ -234,6 +234,7 @@ app.action("feedback_helpful", async ({ ack, respond, action, client }) => {
 });
 
 (async () => {
+  await hydrate();
   const port = Number(process.env.PORT) || 3000;
   await app.start(port);
   console.log(`⚡️ HuKnows running on http://localhost:${port}`);
