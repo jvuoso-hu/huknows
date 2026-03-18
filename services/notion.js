@@ -64,17 +64,6 @@ async function appendBlocks(blocks) {
   }
 }
 
-function metricColumn(emoji, label, value, isEn) {
-  return {
-    object: "block",
-    type: "column",
-    column: {},
-    children: [
-      callout(`${emoji} ${value}\n${label}`, emoji),
-    ],
-  };
-}
-
 async function exportHomeToNotion({ trendingTopics, recentConnections, topExperts, totalSolved, avgTimeToConnect, uniqueResolvedTopics, lang, updatedAt }) {
   if (!PAGE_ID || !process.env.NOTION_API_KEY) {
     console.log("[notion] Skipping export — NOTION_API_KEY or NOTION_PAGE_ID not set");
@@ -83,6 +72,7 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   console.log("[notion] Exporting home to Notion...");
 
   const isEn = lang === "en";
+  const noData = isEn ? "No data yet" : "Sin datos aún";
   const blocks = [];
 
   // Header
@@ -92,17 +82,10 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   ));
   blocks.push(divider());
 
-  // 📊 Metrics dashboard — 3 columns
-  blocks.push({
-    object: "block",
-    type: "column_list",
-    column_list: {},
-    children: [
-      metricColumn("🤝", isEn ? "Connections created" : "Conexiones creadas", totalSolved, isEn),
-      metricColumn("⏱", isEn ? "Avg time to connect" : "Tiempo promedio de conexión", avgTimeToConnect || (isEn ? "No data yet" : "Sin datos aún"), isEn),
-      metricColumn("🔁", isEn ? "Unique topics resolved" : "Temas únicos resueltos", uniqueResolvedTopics, isEn),
-    ],
-  });
+  // 📊 Metrics — 3 callouts
+  blocks.push(callout(`${isEn ? "Connections created" : "Conexiones creadas"}: ${totalSolved}`, "🤝"));
+  blocks.push(callout(`${isEn ? "Avg time to connect" : "Tiempo promedio de conexión"}: ${avgTimeToConnect || noData}`, "⏱"));
+  blocks.push(callout(`${isEn ? "Unique topics resolved" : "Temas únicos resueltos"}: ${uniqueResolvedTopics}`, "🔁"));
   blocks.push(divider());
 
   // 🔥 Trending topics
