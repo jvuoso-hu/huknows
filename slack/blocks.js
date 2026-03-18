@@ -18,9 +18,9 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
   const showEM = emName && (type === "technical" || type === "both");
   const showPM = pmName && (type === "product" || type === "both");
 
-  const lines = [`🧩 *¿Es sobre la Mini-App ${miniapp}?* _(${squad})_`];
-  if (showEM) lines.push(`• Algo técnico → hablar con *${emName}* _(Engineering Manager)_`);
-  if (showPM) lines.push(`• Algo de producto → hablar con *${pmName}* _(Product Manager)_`);
+  const lines = [t(lang, "miniappTitle", miniapp, squad)];
+  if (showEM) lines.push(t(lang, "miniappTechnical", emName));
+  if (showPM) lines.push(t(lang, "miniappProduct", pmName));
 
   const blocks = [
     { type: "section", text: { type: "mrkdwn", text: lines.join("\n") } },
@@ -31,7 +31,7 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
   if (showEM && emUserId) {
     buttons.push({
       type: "button",
-      text: { type: "plain_text", text: `Conectar con ${emName}` },
+      text: { type: "plain_text", text: t(lang, "miniappConnectWith", emName) },
       style: "primary",
       action_id: "connect_expert",
       value: JSON.stringify({
@@ -39,8 +39,8 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
         query,
         example: null,
         channelCount: 0,
-        explanation: `Engineering Manager de la Mini-App ${miniapp}`,
-        briefMessage: `Como *Engineering Manager* de *${miniapp}*, te contactamos porque la consulta parece ser de índole técnica.`,
+        explanation: t(lang, "miniappEMExplanation", miniapp),
+        briefMessage: t(lang, "miniappEMBrief", miniapp),
         wasRecommended: false,
         lang,
       }),
@@ -49,7 +49,7 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
   if (showPM && pmUserId) {
     buttons.push({
       type: "button",
-      text: { type: "plain_text", text: `Conectar con ${pmName}` },
+      text: { type: "plain_text", text: t(lang, "miniappConnectWith", pmName) },
       style: "primary",
       action_id: "connect_expert",
       value: JSON.stringify({
@@ -57,8 +57,8 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
         query,
         example: null,
         channelCount: 0,
-        explanation: `Product Manager de la Mini-App ${miniapp}`,
-        briefMessage: `Como *Product Manager* de *${miniapp}*, te contactamos porque la consulta parece estar relacionada con producto o experiencia.`,
+        explanation: t(lang, "miniappPMExplanation", miniapp),
+        briefMessage: t(lang, "miniappPMBrief", miniapp),
         wasRecommended: false,
         lang,
       }),
