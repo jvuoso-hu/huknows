@@ -1,5 +1,28 @@
 const { interpretAvailabilityBatch } = require("../services/aiStatus");
 
+function timeUntil(unixTs, lang = "es") {
+  if (!unixTs || unixTs === 0) return null;
+  const ms = unixTs * 1000 - Date.now();
+  if (ms <= 0) return null;
+  const isEs = lang !== "en";
+  const totalMins = Math.round(ms / 60000);
+  const totalHours = Math.floor(totalMins / 60);
+  const totalDays = Math.floor(totalHours / 24);
+  if (totalMins < 60) {
+    return isEs ? `en ${totalMins} minutos` : `in ${totalMins} minutes`;
+  }
+  if (totalHours < 24) {
+    const mins = totalMins % 60;
+    return mins === 0
+      ? (isEs ? `en ${totalHours}h` : `in ${totalHours}h`)
+      : (isEs ? `en ${totalHours}h ${mins}min` : `in ${totalHours}h ${mins}min`);
+  }
+  const hours = totalHours % 24;
+  return hours === 0
+    ? (isEs ? `en ${totalDays} días` : `in ${totalDays} days`)
+    : (isEs ? `en ${totalDays} días y ${hours}hs` : `in ${totalDays} days and ${hours}h`);
+}
+
 function formatTime(unixTs) {
   if (!unixTs || unixTs === 0) return null;
   const tz = "America/Argentina/Buenos_Aires";
@@ -31,7 +54,7 @@ async function enrichExperts(client, experts, lang = "es") {
         name: user?.real_name || user?.name || expert.userId,
         presence: presenceResult?.presence || "away",
         dndEnabled: dndResult?.snooze_enabled || false,
-        dndEndsAt: formatTime(dndResult?.next_dnd_end_ts),
+        dndEndsAt: timeUntil(dndResult?.next_dnd_end_ts, lang),
         statusText: profile.status_text || "",
         statusEmoji: profile.status_emoji || "",
         statusExpires: formatTime(profile.status_expiration),

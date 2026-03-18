@@ -158,7 +158,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
         style: "primary",
         action_id: "connect_expert",
         value: JSON.stringify({
-          userId, query, example: example || null, channelCount,
+          userId, expertName: name, query, example: example || null, channelCount,
           explanation: explanation || null, briefMessage: briefMessage || null,
           briefMessageExpert: briefMessageExpert || null,
           wasRecommended: wasRecommended || false, lang,

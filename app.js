@@ -77,6 +77,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
 
     const {
       userId: expertUserId,
+      expertName,
       query,
       example,
       channelCount,
@@ -89,15 +90,10 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
     const requesterUserId = body.user.id;
     const timeToConnectMs = recordConnect(requesterUserId, query);
 
-    const [expertName, opened] = await Promise.all([
-      client.users.info({ user: expertUserId }).then((r) => {
-        const u = r.user;
-        return u?.real_name || u?.profile?.display_name || u?.name || "this expert";
-      }),
-      client.conversations.open({ users: `${requesterUserId},${expertUserId}` }),
-    ]);
+    const opened = await client.conversations.open({ users: `${requesterUserId},${expertUserId}` });
     const channelId = opened.channel.id;
-    const brief = buildBrief(query, expertName, explanation, example, channelCount, briefMessageExpert || briefMessage, lang, wasRecommended, requesterUserId);
+    const resolvedName = expertName || "this expert";
+    const brief = buildBrief(query, resolvedName, explanation, example, channelCount, briefMessageExpert || briefMessage, lang, wasRecommended, requesterUserId);
 
     await client.chat.postMessage({ channel: channelId, text: brief });
 
@@ -105,11 +101,11 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
     await client.chat.postEphemeral({
       channel: channelId,
       user: requesterUserId,
-      text: t(lang, "feedbackPrompt", expertName),
+      text: t(lang, "feedbackPrompt", resolvedName),
       blocks: [
         {
           type: "section",
-          text: { type: "mrkdwn", text: t(lang, "feedbackPrompt", expertName) },
+          text: { type: "mrkdwn", text: t(lang, "feedbackPrompt", resolvedName) },
         },
         {
           type: "actions",
@@ -119,7 +115,7 @@ app.action("connect_expert", async ({ ack, body, client, action, respond, logger
               text: { type: "plain_text", text: t(lang, "helpful") },
               style: "primary",
               action_id: "feedback_helpful",
-              value: JSON.stringify({ query, expertUserId, expertName, lang }),
+              value: JSON.stringify({ query, expertUserId, expertName: resolvedName, lang }),
             },
             {
               type: "button",

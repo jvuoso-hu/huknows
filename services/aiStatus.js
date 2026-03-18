@@ -10,7 +10,7 @@ async function interpretAvailabilityBatch(users, lang = "es") {
       const parts = [
         `userId: ${u.userId}`,
         `presence: ${u.presence}`,
-        `dnd: ${u.dndEnabled ? `yes, ends at ${u.dndEndsAt || "unknown"}` : "no"}`,
+        `dnd: ${u.dndEnabled ? `yes, ends ${u.dndEndsAt || "unknown"}` : "no"}`,
         `statusEmoji: "${u.statusEmoji || ""}"`,
         `statusText: "${u.statusText || ""}"`,
         `statusExpires: ${u.statusExpires || "no expiry"}`,
