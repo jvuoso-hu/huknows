@@ -22,58 +22,60 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
   const emMention = emUserId ? `<@${emUserId}>` : `*${emName}*`;
   const pmMention = pmUserId ? `<@${pmUserId}>` : `*${pmName}*`;
 
-  const lines = [
-    t(lang, "miniappShortcutTitle"),
-    t(lang, "miniappRelatedTo", miniapp, squad),
-  ];
-  if (showEM) lines.push(t(lang, "miniappTechnical", emMention));
-  if (showPM) lines.push(t(lang, "miniappProduct", pmMention));
-
   const blocks = [
-    { type: "section", text: { type: "mrkdwn", text: lines.join("\n") } },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `${t(lang, "miniappShortcutTitle")}\n${t(lang, "miniappRelatedTo", miniapp, squad)}`,
+      },
+    },
   ];
 
-  // Connect buttons for resolved users
-  const buttons = [];
-  if (showEM && emUserId) {
-    buttons.push({
-      type: "button",
-      text: { type: "plain_text", text: t(lang, "miniappConnectWith", emName) },
-      style: "primary",
-      action_id: "connect_expert",
-      value: JSON.stringify({
-        userId: emUserId,
-        query,
-        example: null,
-        channelCount: 0,
-        explanation: t(lang, "miniappEMExplanation", miniapp),
-        briefMessage: t(lang, "miniappEMBrief", miniapp),
-        wasRecommended: false,
-        lang,
-      }),
-    });
-  }
-  if (showPM && pmUserId) {
-    buttons.push({
-      type: "button",
-      text: { type: "plain_text", text: t(lang, "miniappConnectWith", pmName) },
-      style: "primary",
-      action_id: "connect_expert",
-      value: JSON.stringify({
-        userId: pmUserId,
-        query,
-        example: null,
-        channelCount: 0,
-        explanation: t(lang, "miniappPMExplanation", miniapp),
-        briefMessage: t(lang, "miniappPMBrief", miniapp),
-        wasRecommended: false,
-        lang,
-      }),
-    });
+  if (showEM) {
+    const section = {
+      type: "section",
+      text: { type: "mrkdwn", text: t(lang, "miniappTechnical", emMention) },
+    };
+    if (emUserId) {
+      section.accessory = {
+        type: "button",
+        text: { type: "plain_text", text: t(lang, "miniappConnectWith", emName) },
+        style: "primary",
+        action_id: "connect_expert",
+        value: JSON.stringify({
+          userId: emUserId, query, example: null, channelCount: 0,
+          explanation: t(lang, "miniappEMExplanation", miniapp),
+          briefMessage: t(lang, "miniappEMBrief", miniapp),
+          briefMessageExpert: t(lang, "miniappEMBrief", miniapp),
+          wasRecommended: false, lang,
+        }),
+      };
+    }
+    blocks.push(section);
   }
 
-  if (buttons.length) {
-    blocks.push({ type: "actions", elements: buttons });
+  if (showPM) {
+    const section = {
+      type: "section",
+      text: { type: "mrkdwn", text: t(lang, "miniappProduct", pmMention) },
+    };
+    if (pmUserId) {
+      section.accessory = {
+        type: "button",
+        text: { type: "plain_text", text: t(lang, "miniappConnectWith", pmName) },
+        style: "primary",
+        action_id: "connect_expert",
+        value: JSON.stringify({
+          userId: pmUserId, query, example: null, channelCount: 0,
+          explanation: t(lang, "miniappPMExplanation", miniapp),
+          briefMessage: t(lang, "miniappPMBrief", miniapp),
+          briefMessageExpert: t(lang, "miniappPMBrief", miniapp),
+          wasRecommended: false, lang,
+        }),
+      };
+    }
+    blocks.push(section);
   }
 
   return blocks;
