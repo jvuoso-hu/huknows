@@ -27,8 +27,11 @@ function recordConnect(userId, query) {
   const key = query.toLowerCase().trim();
   const match = searches.find((s) => s.query.toLowerCase().trim() === key);
   if (match) {
-    connectionDurations.push(Date.now() - match.ts);
+    const duration = Date.now() - match.ts;
+    connectionDurations.push(duration);
+    return duration;
   }
+  return null;
 }
 
 function recordSearch(userId, query) {
