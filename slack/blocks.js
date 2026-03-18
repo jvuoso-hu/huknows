@@ -90,14 +90,19 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   const successCount = getSuccessCount(query);
   const isSingle = experts.length === 1;
 
-  const headerText = isSingle
-    ? t(lang, "singleExpertHeader", query)
-    : t(lang, "topExpertsHeader", query);
-
   const blocks = [
     {
       type: "section",
-      text: { type: "mrkdwn", text: headerText },
+      text: { type: "mrkdwn", text: t(lang, "resultIntro") },
+    },
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: isSingle
+          ? t(lang, "singleExpertHeader", query)
+          : t(lang, "topExpertsHeader", query),
+      },
     },
   ];
 

@@ -2,11 +2,15 @@ const { interpretAvailabilityBatch } = require("../services/aiStatus");
 
 function formatTime(unixTs) {
   if (!unixTs || unixTs === 0) return null;
-  return new Date(unixTs * 1000).toLocaleTimeString("es-AR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Argentina/Buenos_Aires",
-  });
+  const tz = "America/Argentina/Buenos_Aires";
+  const date = new Date(unixTs * 1000);
+  const now = new Date();
+  const sameDay =
+    date.toLocaleDateString("es-AR", { timeZone: tz }) ===
+    now.toLocaleDateString("es-AR", { timeZone: tz });
+  const time = date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+  if (sameDay) return time;
+  return date.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", timeZone: tz }) + " " + time;
 }
 
 async function enrichExperts(client, experts, lang = "es") {
