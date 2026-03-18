@@ -81,12 +81,12 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
       metricValue(totalSolved, "🤝🏻", "blue_background"),
     ],
     [
-      metricLabel(isEn ? "Avg time to connect:" : "Tiempo promedio de conexión:"),
+      metricLabel(isEn ? "Avg time:" : "Tiempo promedio:"),
       metricValue(avgTimeToConnect || noData, "⏱", "yellow_background"),
     ],
     [
-      metricLabel(isEn ? "Unique topics resolved:" : "Temas únicos resueltos:"),
-      metricValue(uniqueResolvedTopics, "🔁", "green_background"),
+      metricLabel(isEn ? "Topics resolved:" : "Temas resueltos:"),
+      metricValue(uniqueResolvedTopics, "🧩", "green_background"),
     ],
   ));
   blocks.push(divider());
@@ -98,20 +98,16 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   if (trendingTopics.length > 0) {
     const word = isEn ? "search" : "búsqueda";
     const wordP = isEn ? "searches" : "búsquedas";
-    leftCol.push(heading2(isEn ? "🔥 Trending topics" : "🔥 Trending topics en Hu"));
-    for (const t of trendingTopics) {
-      leftCol.push(bullet([rich(t.topic, { bold: true }), rich(` · ${t.count} ${t.count === 1 ? word : wordP}`)]));
+    leftCol.push(metricLabel(isEn ? "Trending topics:" : "Trending topics:"));
+    for (const t of trendingTopics.slice(0, 3)) {
+      leftCol.push(metricValue(`${t.topic} · ${t.count} ${t.count === 1 ? word : wordP}`, "🔥", "pink_background"));
     }
   }
 
   if (recentConnections.length > 0) {
-    rightCol.push(heading2(isEn ? "🧠 Knowledge unlocked" : "🧠 Conocimiento desbloqueado"));
-    for (const c of recentConnections) {
-      rightCol.push(bullet([
-        rich(c.query, { italic: true }),
-        rich(" → "),
-        rich(c.expertName || "—", { bold: true }),
-      ]));
+    rightCol.push(metricLabel(isEn ? "Knowledge unlocked:" : "Conocimiento desbloqueado:"));
+    for (const c of recentConnections.slice(0, 3)) {
+      rightCol.push(metricValue(`${c.query} → ${c.expertName || "—"}`, "🧠", "purple_background"));
     }
   }
 
@@ -122,12 +118,12 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
     blocks.push(divider());
   }
 
-  // Heroes (full width)
+  // Heroes
   if (topExperts.length > 0) {
     const MEDALS = ["🥇", "🥈", "🥉"];
-    blocks.push(heading2(isEn ? "🏆 Top knowledge heroes" : "🏆 Expertos destacados"));
+    blocks.push(metricLabel(isEn ? "Top knowledge heroes:" : "Expertos destacados:"));
     for (let i = 0; i < topExperts.length; i++) {
-      blocks.push(numbered([rich(`${MEDALS[i] || "🏅"} ${topExperts[i].name}`, { bold: true }), rich(` · Hero Level ${topExperts[i].level}`)]));
+      blocks.push(metricValue(`${topExperts[i].name} · Hero Level ${topExperts[i].level}`, MEDALS[i] || "🏅", "orange_background"));
     }
     blocks.push(divider());
   }
