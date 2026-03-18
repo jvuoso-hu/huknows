@@ -22,18 +22,18 @@ Imaginá bloques conectados así:
      │  (mensajes, canales,│     │  (roles, mini-apps, │
      │   presencia, DND)   │     │   EM/PM)            │
      └──────────┬──────────┘     └──────────┬──────────┘
-                │  proveedores de info      │
-                └────────────┬─────────────┘
+                │    proveedores de info    │
+                └────────────┬──────────────┘
                              │ ↑↓
                 ┌────────────▼────────────┐
-                │  ⚡ HuKnows (Railway)   │
+                │  ⚡ HuKnows (Railway)    │
                 └────┬──────────┬────┬────┘
-                     │ ↑↓       │ ↑↓ │ ↑↓
-        ┌────────────▼──┐  ┌────▼───▼────┐  ┌────────────▼────────┐
-        │  🤖 IA Claude  │  │  🔴 Redis   │  │  📋 Notion          │
-        │  (Anthropic)  │  │  (Railway)  │  │  (dashboards,       │
-        └───────────────┘  │  persistencia│  │   analytics)        │
-                           └─────────────┘  └─────────────────────┘
+                     │ ↑↓       │ ↑↓ │──────→
+        ┌────────────▼──┐  ┌────▼───────┐  ┌──▼────────────────┐
+        │  🤖 IA Claude │  │  🔴 Redis   │  │  📋 Notion        │
+        │  (Anthropic)  │  │ (Railway)  │  │  (dashboards      │
+        └───────────────┘  │persistencia│  │   analytics)      │
+                           └────────────┘  └───────────────────┘
 ```
 
 | Cajita                 | Qué es                                                                                                                                                                                                                      |
@@ -58,10 +58,11 @@ Slack le dice al servidor en **Railway**: “fulanito pidió esto”.
 **3️⃣ Respuesta inmediata**  
 HuKnows contesta al usuario algo tipo _“Ya estoy buscando…”_ (solo lo ve quien preguntó).
 
-**4️⃣ HuKnows junta datos de dos lados (en paralelo)**  
-- **Slack**: lista de canales, **mensajes recientes** (y respuestas en hilos), perfiles y presencia.  
+**4️⃣ HuKnows junta datos de dos lados (en paralelo)**
+
+- **Slack**: lista de canales, **mensajes recientes** (y respuestas en hilos), perfiles y presencia.
 - **Google Sheets**: **roles del equipo** y tabla **mini-app → EM / PM** (contexto de negocio).  
-Sheets sirve sobre todo para saber **quién hace qué** (roles); Slack aporta las conversaciones.
+  Sheets sirve sobre todo para saber **quién hace qué** (roles); Slack aporta las conversaciones.
 
 **5️⃣ Primera intervención de IA (ranking)**  
 No manda _todos_ los mensajes: arma un **muestrario** (hasta ~200 fragmentos) y se lo pasa a **Claude** con instrucciones claras. La IA:
@@ -87,20 +88,20 @@ HuKnows abre un **chat grupal** (vos + el experto) y manda un **brief** con cont
 
 ## 🧩 Dónde está “la implementación”
 
-| Idea                    | Dónde vive                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------ |
-| **Orquestación**        | `app.js`: atiende el comando, botones y la “casa” de la app en Slack.          |
-| **Búsqueda + datos**    | `services/ranking.js`: Slack + hilos + hojas + preparación para la IA.         |
-| **IA expertos**         | `services/aiRanking.js`: Claude elige expertos y redacciones.                  |
-| **IA estado**           | `services/aiStatus.js`: Claude interpreta si alguien está libre o ocupado.     |
-| **Pantalla Slack**      | `slack/blocks.js` + `slack/userInfo.js`.                                       |
-| **Idioma**              | `utils/language.js`: textos y detección ES/EN.                                 |
-| **Aprendizaje liviano** | `utils/feedback.js`: conteos y sugerencias humanas; **persiste en Redis**.     |
+| Idea                    | Dónde vive                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| **Orquestación**        | `app.js`: atiende el comando, botones y la “casa” de la app en Slack.           |
+| **Búsqueda + datos**    | `services/ranking.js`: Slack + hilos + hojas + preparación para la IA.          |
+| **IA expertos**         | `services/aiRanking.js`: Claude elige expertos y redacciones.                   |
+| **IA estado**           | `services/aiStatus.js`: Claude interpreta si alguien está libre o ocupado.      |
+| **Pantalla Slack**      | `slack/blocks.js` + `slack/userInfo.js`.                                        |
+| **Idioma**              | `utils/language.js`: textos y detección ES/EN.                                  |
+| **Aprendizaje liviano** | `utils/feedback.js`: conteos y sugerencias humanas; **persiste en Redis**.      |
 | **Redis**               | `services/redis.js`: persistencia en Railway (búsquedas, feedback, conexiones). |
-| **Notion**              | `services/notion.js`: export del resumen de Home → dashboards/analytics.       |
-| **Hojas**               | `utils/sheets.js`: roles, mini-apps (proveedor de info en paralelo a Slack).   |
-| **Caché**               | `utils/cache.js`: menos llamadas repetidas a Slack.                           |
-| **Home del bot**        | `slack/home.js`: estadísticas; IA para agrupar temas; dispara export a Notion. |
+| **Notion**              | `services/notion.js`: export del resumen de Home → dashboards/analytics.        |
+| **Hojas**               | `utils/sheets.js`: roles, mini-apps (proveedor de info en paralelo a Slack).    |
+| **Caché**               | `utils/cache.js`: menos llamadas repetidas a Slack.                             |
+| **Home del bot**        | `slack/home.js`: estadísticas; IA para agrupar temas; dispara export a Notion.  |
 
 ---
 
