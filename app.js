@@ -205,7 +205,7 @@ app.action("suggest_expert_skip", async ({ ack, respond, body }) => {
   await respond({ replace_original: true, text: "👍" });
 });
 
-app.action("feedback_helpful", async ({ ack, respond, action }) => {
+app.action("feedback_helpful", async ({ ack, respond, action, client }) => {
   await ack();
 
   const {
