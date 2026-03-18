@@ -1,5 +1,6 @@
 const Anthropic = require("@anthropic-ai/sdk");
 const { getTopQueries, getTopExperts, getRecentSearches, getRecentConnections, getTotalSuccesses } = require("../utils/feedback");
+const { exportHomeToNotion } = require("../services/notion");
 
 const anthropic = new Anthropic();
 
@@ -69,6 +70,12 @@ async function buildHomeView(client, userId) {
   const recentConnections = getRecentConnections(5);
   const totalSolved = getTotalSuccesses();
 
+  // Compute once, share between Slack blocks and Notion export
+  const [grouped, enriched] = await Promise.all([
+    topQueries.length > 0 ? groupTopQueries(topQueries) : Promise.resolve([]),
+    topExperts.length > 0 ? enrichTopExperts(client, topExperts) : Promise.resolve([]),
+  ]);
+
   const blocks = [
     {
       type: "header",
@@ -102,8 +109,7 @@ async function buildHomeView(client, userId) {
   }
 
   // 🔥 Trending topics
-  if (topQueries.length > 0) {
-    const grouped = await groupTopQueries(topQueries);
+  if (grouped.length > 0) {
     const searchWord = isEn ? "search" : "búsqueda";
     const searchWordPlural = isEn ? "searches" : "búsquedas";
     const lines = grouped
@@ -144,14 +150,9 @@ async function buildHomeView(client, userId) {
   }
 
   // 🏆 Top knowledge heroes
-  if (topExperts.length > 0) {
-    const enriched = await enrichTopExperts(client, topExperts);
+  if (enriched.length > 0) {
     const lines = enriched
-      .map((e, i) => {
-        const medal = MEDALS[i] || "🏅";
-        const level = heroLevel(e.count);
-        return `${medal} ${e.name} · Hero Level ${level}`;
-      })
+      .map((e, i) => `${MEDALS[i] || "🏅"} ${e.name} · Hero Level ${heroLevel(e.count)}`)
       .join("\n");
     blocks.push({
       type: "section",
@@ -202,6 +203,17 @@ async function buildHomeView(client, userId) {
         : "_HuKnows aprende con cada conexión para que el conocimiento fluya cada vez más rápido dentro de Hu._",
     }],
   });
+
+  // Export to Notion — fire and forget, non-critical
+  exportHomeToNotion({
+    recentSearches: recentSearches.map((s) => ({ query: s.query, timeAgo: timeAgo(s.ts, lang) })),
+    trendingTopics: grouped,
+    recentConnections,
+    topExperts: enriched.map((e) => ({ name: e.name, level: heroLevel(e.count) })),
+    totalSolved,
+    lang,
+    updatedAt: new Date().toLocaleString(lang === "en" ? "en-US" : "es-AR", { timeZone: "America/Argentina/Buenos_Aires" }),
+  }).catch(() => {});
 
   return { type: "home", blocks };
 }
