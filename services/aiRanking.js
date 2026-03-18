@@ -71,7 +71,7 @@ Return ONLY valid JSON with exactly this structure (no extra text):
     {
       "userId": "<slack user id>",
       "score": <integer 1-10>,
-      "confidence": "<e.g. 'Coincidencia fuerte'>",
+      "confidence": "<one of: 'Coincidencia perfecta' | 'Coincidencia alta' | 'Buen match' | 'Coincidencia posible' | 'Posible ayuda' — or English equivalents: 'Perfect match' | 'Strong match' | 'Good match' | 'Potential match' | 'Low match, suggested connection'>",
       "explanation": "<one sentence: why relevant>",
       "briefMessage": "<2 sentences, personalized>",
       "exampleText": "<snippet max 120 chars>"

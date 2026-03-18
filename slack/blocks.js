@@ -2,10 +2,11 @@ const { t } = require("../utils/language");
 const { getSuccessCount } = require("../utils/feedback");
 
 const CONFIDENCE_EMOJI = {
-  "coincidencia fuerte": "🔥", "strong match": "🔥",
-  "buena coincidencia": "✅", "good match": "✅",
-  "posible coincidencia": "🤔", "possible match": "🤔",
-  "coincidencia moderada": "🟡", "moderate match": "🟡",
+  "coincidencia perfecta": "🔥", "perfect match": "🔥",
+  "coincidencia alta": "⭐", "strong match": "⭐",
+  "buen match": "💡", "good match": "💡",
+  "coincidencia posible": "🔎", "potential match": "🔎",
+  "posible ayuda": "👍", "low match, suggested connection": "👍",
 };
 
 function confidenceEmoji(confidence) {
