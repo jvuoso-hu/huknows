@@ -1,6 +1,11 @@
 const { t } = require("../utils/language");
 const { getSuccessCount } = require("../utils/feedback");
 
+const SLACK_ID_PATTERN = /\bU[A-Z0-9]{6,12}\b/g;
+function sanitize(text) {
+  return text ? text.replace(SLACK_ID_PATTERN, "").replace(/\s{2,}/g, " ").trim() : text;
+}
+
 const CONFIDENCE_EMOJI = {
   "coincidencia perfecta": "🔥", "perfect match": "🔥",
   "coincidencia alta": "⭐", "strong match": "⭐",
@@ -126,7 +131,7 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
       text += `\n${channelLine}`;
     }
 
-    const description = briefMessage || explanation;
+    const description = sanitize(briefMessage || explanation);
     if (description) {
       text += `\n\n${description}`;
     }
@@ -193,11 +198,6 @@ function buildNoExpertsBlocks(query, suggestedChannels, lang = "es", miniappMatc
   }
 
   return blocks;
-}
-
-const SLACK_ID_PATTERN = /\bU[A-Z0-9]{6,12}\b/g;
-function sanitize(text) {
-  return text ? text.replace(SLACK_ID_PATTERN, "") : text;
 }
 
 function buildBrief(query, expertName, explanation, example, channelCount, briefMessage, lang = "es", wasRecommended = false, requesterUserId = null) {
