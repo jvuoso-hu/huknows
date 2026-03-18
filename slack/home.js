@@ -213,7 +213,7 @@ async function buildHomeView(client, userId) {
     totalSolved,
     lang,
     updatedAt: new Date().toLocaleString(lang === "en" ? "en-US" : "es-AR", { timeZone: "America/Argentina/Buenos_Aires" }),
-  }).catch(() => {});
+  }).catch((e) => console.error("[notion] Export failed:", e.message));
 
   return { type: "home", blocks };
 }

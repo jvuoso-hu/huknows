@@ -64,7 +64,11 @@ async function appendBlocks(blocks) {
 }
 
 async function exportHomeToNotion({ recentSearches, trendingTopics, recentConnections, topExperts, totalSolved, lang, updatedAt }) {
-  if (!PAGE_ID || !process.env.NOTION_API_KEY) return;
+  if (!PAGE_ID || !process.env.NOTION_API_KEY) {
+    console.log("[notion] Skipping export — NOTION_API_KEY or NOTION_PAGE_ID not set");
+    return;
+  }
+  console.log("[notion] Exporting home to Notion...");
 
   const isEn = lang === "en";
   const blocks = [];
