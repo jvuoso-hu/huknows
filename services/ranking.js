@@ -105,7 +105,16 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
 
   const candidates = [];
   const userChannels = {};
+  const userMessageCount = {};
+  const userLastMessageTs = {};
   const threadFetches = [];
+
+  const trackActivity = (userId, ts) => {
+    userMessageCount[userId] = (userMessageCount[userId] || 0) + 1;
+    if (!userLastMessageTs[userId] || ts > userLastMessageTs[userId]) {
+      userLastMessageTs[userId] = ts;
+    }
+  };
 
   for (const result of historyResults) {
     if (result.status !== "fulfilled") continue;
@@ -122,6 +131,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
       });
       if (!userChannels[message.user]) userChannels[message.user] = new Set();
       userChannels[message.user].add(channel.name);
+      trackActivity(message.user, parseFloat(message.ts));
     }
 
     // Queue thread fetches
@@ -150,6 +160,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
       });
       if (!userChannels[reply.user]) userChannels[reply.user] = new Set();
       userChannels[reply.user].add(channel.name);
+      trackActivity(reply.user, parseFloat(reply.ts));
     }
   }
 
@@ -211,6 +222,8 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
       }
     : null;
 
+  const thirtyDaysAgo = Date.now() / 1000 - 30 * 24 * 60 * 60;
+
   return {
     lang: lang || "es",
     suggestedChannels: suggestedChannels || [],
@@ -219,6 +232,9 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
       const userCandidates = candidates.filter((c) => c.userId === expert.userId);
       const hasPrivateSource = userCandidates.some((c) => c.isPrivate);
       const firstCandidate = userCandidates[0];
+      const msgCount = userMessageCount[expert.userId] || 0;
+      const lastTs = userLastMessageTs[expert.userId];
+      const lowActivity = msgCount < 3 || (lastTs && lastTs < thirtyDaysAgo);
       return {
         userId: expert.userId,
         score: expert.score,
@@ -227,6 +243,7 @@ async function rankExperts(client, query, requesterUserId, logger, onProgress) {
         briefMessage: expert.briefMessage || null,
         wasRecommended: suggestedSet.has(expert.userId),
         hasPrivateSource,
+        lowActivity: !!lowActivity,
         example: expert.exampleText && !hasPrivateSource
           ? { text: expert.exampleText, channelName: firstCandidate?.channelName || "" }
           : hasPrivateSource

@@ -98,20 +98,33 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   blocks.push({ type: "divider" });
 
   for (let i = 0; i < experts.length; i++) {
-    const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount, wasRecommended } = experts[i];
+    const { userId, name, confidence, explanation, briefMessage, dnd, example, channelCount, wasRecommended, lowActivity } = experts[i];
 
-    const nameLabel = isSingle ? `<@${userId}>` : `*${i + 1}. ${name}*`;
-    let text = `${nameLabel}  ${dnd.emoji} ${dnd.label}`;
+    const nameLabel = (isSingle && !lowActivity) ? `<@${userId}>` : `*${i + 1 > 1 || !isSingle ? `${i + 1}. ` : ""}${name}*`;
+    const statusLabel = lowActivity
+      ? t(lang, "lowActivityBadge")
+      : `${dnd.emoji} ${dnd.label}`;
+
+    let text = `${nameLabel}  ${statusLabel}`;
     text += `\n${confidenceEmoji(confidence)} ${confidence}  ${t(lang, "topicLabel", query)}`;
 
     const channelName = example?.channelName;
     if (channelName) {
-      text += `\n${example.isPrivate ? "🔒" : t(lang, "activeIn", channelName)}`;
+      const channelLine = lowActivity
+        ? t(lang, "expertiseSignals", channelName)
+        : example.isPrivate
+        ? "🔒"
+        : t(lang, "activeIn", channelName);
+      text += `\n${channelLine}`;
     }
 
     const description = briefMessage || explanation;
     if (description) {
       text += `\n\n${description}`;
+    }
+
+    if (lowActivity) {
+      text += `\n\n${t(lang, "lowActivityWarning")}`;
     }
 
     if (wasRecommended) {
