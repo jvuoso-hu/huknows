@@ -1,7 +1,8 @@
 const { Client } = require("@notionhq/client");
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
-const PAGE_ID = process.env.NOTION_PAGE_ID;
+// Strip optional page-title prefix (e.g. "HuKnows-3278271f..." → "3278271f...")
+const PAGE_ID = (process.env.NOTION_PAGE_ID || "").replace(/^.*-([a-f0-9]{32})$/, "$1") || process.env.NOTION_PAGE_ID;
 
 function rich(text, options = {}) {
   const t = { type: "text", text: { content: text } };
