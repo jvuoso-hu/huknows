@@ -115,8 +115,15 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   }
 
   if (recentConnections.length > 0) {
+    const deduped = Object.values(
+      recentConnections.reduce((acc, c) => {
+        const key = c.query.toLowerCase().trim();
+        if (!acc[key]) acc[key] = c;
+        return acc;
+      }, {})
+    ).slice(0, 3);
     rightCol.push(metricLabel(isEn ? "Knowledge unlocked:" : "Conocimiento desbloqueado:"));
-    for (const c of recentConnections.slice(0, 3)) {
+    for (const c of deduped) {
       rightCol.push(metricValue(`${c.query} → ${c.expertName || "—"}`, "🧠", "purple_background"));
     }
   }
@@ -142,19 +149,30 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   }
 
   // Badge legend (static, always shown)
+  blocks.push(metricLabel("Badges"));
   blocks.push(columns(
-    [
-      metricLabel("🔥 Trending expert"),
-      paragraph([rich(isEn
-        ? "The expert with the most recent connections in Hu."
-        : "El experto con más conexiones recientes en Hu.", { italic: true })]),
-    ],
-    [
-      metricLabel("🧩 Cross-team connector"),
-      paragraph([rich(isEn
-        ? "The expert who helped across the most diverse topics."
-        : "El experto que ayudó en la mayor variedad de temas.", { italic: true })]),
-    ],
+    [{
+      object: "block", type: "callout",
+      callout: {
+        rich_text: [rich("Trending expert", { bold: true })],
+        icon: { type: "emoji", emoji: "🔥" },
+        color: "red_background",
+        children: [paragraph([rich(isEn
+          ? "Awarded to the expert with the most recent connections in Hu."
+          : "Otorgada al experto con más conexiones recientes en Hu.")])],
+      },
+    }],
+    [{
+      object: "block", type: "callout",
+      callout: {
+        rich_text: [rich("Cross-team connector", { bold: true })],
+        icon: { type: "emoji", emoji: "🧩" },
+        color: "blue_background",
+        children: [paragraph([rich(isEn
+          ? "Awarded to the expert who helped across the most diverse topics."
+          : "Otorgada al experto que ayudó en la mayor variedad de temas.")])],
+      },
+    }],
   ));
   blocks.push(divider());
 
