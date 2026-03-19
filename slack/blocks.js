@@ -1,5 +1,5 @@
 const { t } = require("../utils/language");
-const { getSuccessCount } = require("../utils/feedback");
+const { getSuccessCount, getTrendingExpertId, getCrossTeamConnectorId } = require("../utils/feedback");
 
 const SLACK_ID_PATTERN = /\bU[A-Z0-9]{6,12}\b/g;
 function sanitize(text) {
@@ -89,6 +89,8 @@ function buildMiniappBlock(miniappMatch, lang, query = "") {
 function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
   const successCount = getSuccessCount(query);
   const isSingle = experts.length === 1;
+  const trendingId = getTrendingExpertId();
+  const crossTeamId = getCrossTeamConnectorId();
 
   const blocks = [
     {
@@ -148,6 +150,11 @@ function buildResultBlocks(query, experts, lang = "es", miniappMatch = null) {
     if (wasRecommended) {
       text += `\n${t(lang, "wasRecommended")}`;
     }
+
+    const badges = [];
+    if (userId === trendingId) badges.push("🔥 _Trending expert_");
+    if (userId === crossTeamId) badges.push("🧩 _Cross-team connector_");
+    if (badges.length > 0) text += `\n${badges.join("  ")}`;
 
     blocks.push({
       type: "section",

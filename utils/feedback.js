@@ -136,6 +136,28 @@ function getAvgTimeToConnect() {
   return secs === 0 ? `${mins} min` : `${mins} min ${secs} seg`;
 }
 
+function getTrendingExpertId() {
+  if (recentConnections.length < 2) return null;
+  const counts = {};
+  for (const c of recentConnections) {
+    counts[c.expertUserId] = (counts[c.expertUserId] || 0) + 1;
+  }
+  const [topId, topCount] = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return topCount >= 2 ? topId : null;
+}
+
+function getCrossTeamConnectorId() {
+  if (recentConnections.length < 2) return null;
+  const topics = {};
+  for (const c of recentConnections) {
+    if (!topics[c.expertUserId]) topics[c.expertUserId] = new Set();
+    topics[c.expertUserId].add(c.query.toLowerCase().trim());
+  }
+  const sorted = Object.entries(topics).sort((a, b) => b[1].size - a[1].size);
+  const [topId, topTopics] = sorted[0];
+  return topTopics.size >= 2 ? topId : null;
+}
+
 function getNegativeExperts(query) {
   const base = query.toLowerCase().trim() + ":";
   return [...negativeExperts.entries()]
@@ -159,4 +181,5 @@ module.exports = {
   getTopQueries, getTopExperts, getRecentSearches,
   getRecentConnections, getTotalSuccesses,
   getAvgTimeToConnect, getUniqueResolvedTopics,
+  getTrendingExpertId, getCrossTeamConnectorId,
 };
