@@ -54,6 +54,7 @@ Tasks:
    - "briefMessage": THIRD person, shown to the person searching. Example: "Lucas tiene amplia experiencia en payroll Chile a través de múltiples conversaciones."
    - "briefMessageExpert": SECOND person, sent as a DM to the expert. Use "vos/tú/you". If their role/title is relevant, wrap it in Slack bold (*role*). Example: "Como *Head of Finance*, tus mensajes sobre payroll te destacan como la persona indicada."
    NEVER include raw Slack user IDs (e.g. U12345ABC) in any message — use role, channel, or topic references instead.
+   Use gender-neutral language. Never use "El/La" before a role — instead use "Como [role]" or just the name. Example: say "Como *Design Manager*..." not "El/La Design Manager...".
    If their messages are from PRIVATE channels, do NOT quote them — just acknowledge their expertise without specifics.
 
 3. If miniapp ownership data is provided and the query seems to be about one of those miniapps (exact or similar name/topic), include a "miniappMatch" field:
