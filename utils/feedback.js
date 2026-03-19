@@ -129,8 +129,11 @@ function getTopExperts(limit = 5) {
 function getAvgTimeToConnect() {
   if (!connectionDurations.length) return null;
   const avg = connectionDurations.reduce((a, b) => a + b, 0) / connectionDurations.length;
-  const mins = Math.round(avg / 60000);
-  return mins < 1 ? "< 1 min" : `${mins} min`;
+  const totalSecs = Math.round(avg / 1000);
+  if (totalSecs < 60) return `${totalSecs} seg`;
+  const mins = Math.floor(totalSecs / 60);
+  const secs = totalSecs % 60;
+  return secs === 0 ? `${mins} min` : `${mins} min ${secs} seg`;
 }
 
 function getNegativeExperts(query) {
