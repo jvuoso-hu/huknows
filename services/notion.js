@@ -151,10 +151,7 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
   });
   blocks.push(paragraph([rich("HuKnows ® El conocimiento ya está. HuKnows se encarga de conectarlo. Make things happen.", { italic: true })]));
 
-  const FOOTER_IMAGE_URL = process.env.NOTION_FOOTER_IMAGE_URL;
-  if (FOOTER_IMAGE_URL) {
-    blocks.push({ object: "block", type: "image", image: { type: "external", external: { url: FOOTER_IMAGE_URL } } });
-  }
+  blocks.push({ object: "block", type: "image", image: { type: "external", external: { url: "https://raw.githubusercontent.com/jvuoso-hu/huknows/main/assets/footer.png" } } });
 
   await clearPage();
   await appendBlocks(blocks);
