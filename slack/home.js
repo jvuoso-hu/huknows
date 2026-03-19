@@ -1,5 +1,5 @@
 const Anthropic = require("@anthropic-ai/sdk");
-const { getTopQueries, getTopExperts, getRecentSearches, getRecentConnections, getTotalSuccesses, getAvgTimeToConnect, getUniqueResolvedTopics } = require("../utils/feedback");
+const { getTopQueries, getTopExperts, getRecentSearches, getRecentConnections, getTotalSuccesses, getAvgTimeToConnect, getUniqueResolvedTopics, getTrendingExpertId, getCrossTeamConnectorId } = require("../utils/feedback");
 const { exportHomeToNotion } = require("../services/notion");
 
 const anthropic = new Anthropic();
@@ -220,10 +220,23 @@ async function triggerNotionExport(client, lang = "es", cached = {}) {
       cached.enriched || (getTopExperts(3).length > 0 ? enrichTopExperts(client, getTopExperts(3)) : Promise.resolve([])),
     ]);
 
+    const trendingId = getTrendingExpertId();
+    const crossTeamId = getCrossTeamConnectorId();
+    const trendingExpert = enriched.find((e) => e.userId === trendingId)?.name || null;
+    const crossTeamExpert = enriched.find((e) => e.userId === crossTeamId)?.name || null;
+
     await exportHomeToNotion({
       trendingTopics: grouped,
       recentConnections,
-      topExperts: enriched.map((e) => ({ name: e.name, level: heroLevel(e.count) })),
+      topExperts: enriched.map((e) => ({
+        name: e.name,
+        level: heroLevel(e.count),
+        count: e.count,
+        isTrending: e.userId === trendingId,
+        isCrossTeam: e.userId === crossTeamId,
+      })),
+      trendingExpert,
+      crossTeamExpert,
       totalSolved,
       avgTimeToConnect: getAvgTimeToConnect(),
       uniqueResolvedTopics: getUniqueResolvedTopics(),

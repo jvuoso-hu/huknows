@@ -62,7 +62,7 @@ async function appendBlocks(blocks) {
 
 // ─── Export ───────────────────────────────────────────────────────────────────
 
-async function exportHomeToNotion({ trendingTopics, recentConnections, topExperts, totalSolved, avgTimeToConnect, uniqueResolvedTopics, lang, updatedAt }) {
+async function exportHomeToNotion({ trendingTopics, recentConnections, topExperts, trendingExpert, crossTeamExpert, totalSolved, avgTimeToConnect, uniqueResolvedTopics, lang, updatedAt }) {
   if (!PAGE_ID || !process.env.NOTION_API_KEY) {
     console.log("[notion] Skipping export — NOTION_API_KEY or NOTION_PAGE_ID not set");
     return;
@@ -133,8 +133,26 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
     const MEDALS = ["🥇", "🥈", "🥉"];
     blocks.push(metricLabel(isEn ? "Top knowledge heroes:" : "Expertos destacados:"));
     for (let i = 0; i < topExperts.length; i++) {
-      blocks.push(metricValue(`${topExperts[i].name} · Hero Level ${topExperts[i].level}`, MEDALS[i] || "🏅", "orange_background"));
+      const e = topExperts[i];
+      const badges = [e.isTrending ? "🔥" : null, e.isCrossTeam ? "🧩" : null].filter(Boolean).join(" ");
+      const label = `${e.name} · ${e.count} pts · Hero Level ${e.level}${badges ? "  " + badges : ""}`;
+      blocks.push(metricValue(label, MEDALS[i] || "🏅", "orange_background"));
     }
+    blocks.push(divider());
+  }
+
+  // Badges section (2 columns)
+  if (trendingExpert || crossTeamExpert) {
+    blocks.push(columns(
+      [
+        metricLabel(isEn ? "🔥 Trending expert:" : "🔥 Trending expert:"),
+        metricValue(trendingExpert || noData, "🔥", "red_background"),
+      ],
+      [
+        metricLabel(isEn ? "🧩 Cross-team connector:" : "🧩 Cross-team connector:"),
+        metricValue(crossTeamExpert || noData, "🧩", "blue_background"),
+      ],
+    ));
     blocks.push(divider());
   }
 
