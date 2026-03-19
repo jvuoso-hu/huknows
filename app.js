@@ -249,7 +249,7 @@ const CONFIDENCE_EMOJI_MAP = {
 };
 
 // CORS middleware for /api routes
-app.receiver.router.use("/api", (req, res, next) => {
+app.receiver.app.use("/api", (req, res, next) => {
   const origin = req.headers.origin;
   const allowed = process.env.CORS_ORIGIN || "*";
   res.header("Access-Control-Allow-Origin", allowed === "*" ? "*" : origin);
@@ -259,7 +259,7 @@ app.receiver.router.use("/api", (req, res, next) => {
   next();
 });
 
-app.receiver.router.get("/api/find-experts", async (req, res) => {
+app.receiver.app.get("/api/find-experts", async (req, res) => {
   try {
     const query = (req.query.query || "").trim();
     const lang = req.query.lang || "es";
