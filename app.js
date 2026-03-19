@@ -236,6 +236,47 @@ app.action("feedback_helpful", async ({ ack, respond, action, client }) => {
   });
 });
 
+// ─── REST API ─────────────────────────────────────────────────────────────────
+
+const HUCHAT_CONVERSATION_URL = process.env.HUCHAT_CONVERSATION_URL || "https://app.humand.co/conversations/01KM3BZAHZEWTAXXDEBBJT0V8X";
+
+app.receiver.router.get("/api/find-experts", async (req, res) => {
+  try {
+    const query = (req.query.query || "").trim();
+    const lang = req.query.lang || "es";
+
+    if (!query) {
+      return res.status(400).json({ error: "query param required" });
+    }
+
+    const { experts: ranked, suggestedChannels, miniappMatch } = await rankExperts(
+      app.client, query, null, console
+    );
+
+    if (!ranked.length) {
+      return res.json({ query, lang, experts: [], suggestedChannels, miniappMatch });
+    }
+
+    const enriched = await enrichExperts(app.client, ranked.slice(0, 3), lang);
+
+    res.json({
+      query,
+      lang,
+      experts: enriched.map((e) => ({
+        userId: e.userId,
+        name: e.name,
+        confidence: e.confidence,
+        explanation: e.briefMessage || e.explanation || null,
+        availability: e.dnd?.label || null,
+        connectUrl: HUCHAT_CONVERSATION_URL,
+      })),
+    });
+  } catch (error) {
+    console.error("[api] /find-experts error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 (async () => {
   await hydrate();
   const port = Number(process.env.PORT) || 3000;
