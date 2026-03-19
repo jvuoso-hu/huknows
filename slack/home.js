@@ -193,6 +193,23 @@ async function buildHomeView(client, userId) {
     blocks.push({ type: "divider" });
   }
 
+  // Admin
+  blocks.push({
+    type: "actions",
+    elements: [{
+      type: "button",
+      text: { type: "plain_text", text: "🗑️ Reset stats" },
+      style: "danger",
+      action_id: "reset_stats",
+      confirm: {
+        title: { type: "plain_text", text: "¿Resetear todo?" },
+        text: { type: "mrkdwn", text: "Esto borra todas las búsquedas, conexiones y puntos. No se puede deshacer." },
+        confirm: { type: "plain_text", text: "Sí, resetear" },
+        deny: { type: "plain_text", text: "Cancelar" },
+      },
+    }],
+  });
+
   // Footer
   blocks.push({
     type: "context",

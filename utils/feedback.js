@@ -172,8 +172,23 @@ function getSuggestedExperts(query) {
     .map(([k, count]) => ({ userId: k.slice(base.length), count }));
 }
 
+async function resetAll() {
+  queryCounts.clear();
+  expertHelpCounts.clear();
+  userSearches.clear();
+  negativeExperts.clear();
+  suggestedExperts.clear();
+  recentConnections.length = 0;
+  connectionDurations.length = 0;
+  resolvedTopics.clear();
+
+  const keys = ["hk:queryCounts","hk:expertHelpCounts","hk:userSearches","hk:negativeExperts","hk:suggestedExperts","hk:recentConnections","hk:connectionDurations","hk:resolvedTopics"];
+  await Promise.all(keys.map((k) => redis.set(k, null).catch(() => {})));
+  console.log("[redis] All stats reset.");
+}
+
 module.exports = {
-  hydrate,
+  hydrate, resetAll,
   recordSuccess, recordSearch, recordConnect,
   recordNegativeFeedback, recordExpertSuggestion,
   getNegativeExperts, getSuggestedExperts,

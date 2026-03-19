@@ -9,7 +9,7 @@ const {
   buildBrief,
 } = require("./slack/blocks");
 const { t, detectLanguage } = require("./utils/language");
-const { hydrate, recordSuccess, recordSearch, recordConnect, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
+const { hydrate, resetAll, recordSuccess, recordSearch, recordConnect, recordNegativeFeedback, recordExpertSuggestion } = require("./utils/feedback");
 
 const { syncExpertPoints } = require("./utils/sheets");
 const { buildHomeView, triggerNotionExport } = require("./slack/home");
@@ -194,6 +194,13 @@ app.action("suggest_expert", async ({ ack, action, respond, body, client }) => {
     replace_original: true,
     text: t(lang, "suggestionThanks", name),
   });
+});
+
+app.action("reset_stats", async ({ ack, client, body }) => {
+  await ack();
+  await resetAll();
+  const view = await buildHomeView(client, body.user.id);
+  await client.views.publish({ user_id: body.user.id, view });
 });
 
 app.action("suggest_expert_skip", async ({ ack, respond, body }) => {
