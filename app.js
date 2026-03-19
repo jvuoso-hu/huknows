@@ -1,6 +1,6 @@
 require("dotenv").config();
 
-const { App } = require("@slack/bolt");
+const { App, ExpressReceiver } = require("@slack/bolt");
 const { rankExperts } = require("./services/ranking");
 const { enrichExperts } = require("./slack/userInfo");
 const {
@@ -14,9 +14,13 @@ const { hydrate, resetAll, recordSuccess, recordSearch, recordConnect, recordNeg
 const { syncExpertPoints } = require("./utils/sheets");
 const { buildHomeView, triggerNotionExport } = require("./slack/home");
 
+const receiver = new ExpressReceiver({
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+});
+
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  receiver,
 });
 
 app.command("/huknows", async ({ command, ack, respond, client, logger }) => {
@@ -249,7 +253,7 @@ const CONFIDENCE_EMOJI_MAP = {
 };
 
 // CORS middleware for /api routes
-app.receiver.app.use("/api", (req, res, next) => {
+receiver.router.use("/api", (req, res, next) => {
   const origin = req.headers.origin;
   const allowed = process.env.CORS_ORIGIN || "*";
   res.header("Access-Control-Allow-Origin", allowed === "*" ? "*" : origin);
@@ -259,7 +263,7 @@ app.receiver.app.use("/api", (req, res, next) => {
   next();
 });
 
-app.receiver.app.get("/api/find-experts", async (req, res) => {
+receiver.router.get("/api/find-experts", async (req, res) => {
   try {
     const query = (req.query.query || "").trim();
     const lang = req.query.lang || "es";
