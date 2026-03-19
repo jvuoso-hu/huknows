@@ -240,6 +240,25 @@ app.action("feedback_helpful", async ({ ack, respond, action, client }) => {
 
 const HUCHAT_CONVERSATION_URL = process.env.HUCHAT_CONVERSATION_URL || "https://app.humand.co/conversations/01KM3BZAHZEWTAXXDEBBJT0V8X";
 
+const CONFIDENCE_EMOJI_MAP = {
+  "coincidencia perfecta": "🔥", "perfect match": "🔥",
+  "coincidencia alta": "⭐", "strong match": "⭐",
+  "buen match": "💡", "good match": "💡",
+  "coincidencia posible": "🔎", "potential match": "🔎",
+  "posible ayuda": "👍", "low match, suggested connection": "👍",
+};
+
+// CORS middleware for /api routes
+app.receiver.router.use("/api", (req, res, next) => {
+  const origin = req.headers.origin;
+  const allowed = process.env.CORS_ORIGIN || "*";
+  res.header("Access-Control-Allow-Origin", allowed === "*" ? "*" : origin);
+  res.header("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
+
 app.receiver.router.get("/api/find-experts", async (req, res) => {
   try {
     const query = (req.query.query || "").trim();
@@ -266,6 +285,7 @@ app.receiver.router.get("/api/find-experts", async (req, res) => {
         userId: e.userId,
         name: e.name,
         confidence: e.confidence,
+        confidenceEmoji: CONFIDENCE_EMOJI_MAP[(e.confidence || "").toLowerCase()] || "🟡",
         explanation: e.briefMessage || e.explanation || null,
         availability: e.dnd?.label || null,
         connectUrl: HUCHAT_CONVERSATION_URL,
