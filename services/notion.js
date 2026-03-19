@@ -141,20 +141,22 @@ async function exportHomeToNotion({ trendingTopics, recentConnections, topExpert
     blocks.push(divider());
   }
 
-  // Badges section (2 columns)
-  if (trendingExpert || crossTeamExpert) {
-    blocks.push(columns(
-      [
-        metricLabel(isEn ? "🔥 Trending expert:" : "🔥 Trending expert:"),
-        metricValue(trendingExpert || noData, "🔥", "red_background"),
-      ],
-      [
-        metricLabel(isEn ? "🧩 Cross-team connector:" : "🧩 Cross-team connector:"),
-        metricValue(crossTeamExpert || noData, "🧩", "blue_background"),
-      ],
-    ));
-    blocks.push(divider());
-  }
+  // Badge legend (static, always shown)
+  blocks.push(columns(
+    [
+      metricLabel("🔥 Trending expert"),
+      paragraph([rich(isEn
+        ? "The expert with the most recent connections in Hu."
+        : "El experto con más conexiones recientes en Hu.", { italic: true })]),
+    ],
+    [
+      metricLabel("🧩 Cross-team connector"),
+      paragraph([rich(isEn
+        ? "The expert who helped across the most diverse topics."
+        : "El experto que ayudó en la mayor variedad de temas.", { italic: true })]),
+    ],
+  ));
+  blocks.push(divider());
 
   // Footer
   blocks.push(empty());
